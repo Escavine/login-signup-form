@@ -7,85 +7,105 @@
 using namespace std;
 
 
-bool isLoggedIn(string choice)
-{
+bool isLoggedIn(string choice) {
+    
     string username, password;
     string un, pw;
     
     cout << "Enter your username: " << endl;
     cin >> username;
+    
+    cout << endl; /* added space */
     cout << "Enter your password: " << endl;
     cin >> password;
     
-    ifstream read(username + ".txt");
-    getline(read, un);
-    getline(read, pw);
     
-    if (username == un && password == pw)
+    ifstream read(username + ".txt");
+    
+    if (read.is_open())
     {
-        cout << "User has successfully logged in! " << endl;
-        return true;
-    }
+        getline(read, un);
+        getline(read, pw);
+        
+        if (un == username && pw == password) {
+            cout << "User has successfully logged in! " << endl;
+            return true;
+        }
     else 
     {
         cout << "Details are incorrect, please input details again! " << endl;
-        isLoggedIn(choice); /* recurse till correct details are inputted */
+        isLoggedIn(choice);
+        return false;
     }
-    
+  }
 }
 
 
 bool signUp(string choice)
 {
+    
     string username, password;
     string un, pw;
     
     cout << "Enter a username: " << endl;
     cin >> username;
     
+    cout << endl; /* added space */
     cout << "Enter a password: " << endl;
     cin >> password;
     
     cout << "Signing up... " << endl;
     
-    ifstream read(username, ".txt");
-    getline(read, un);
-    getline(read, pw);
+    ifstream read(username + ".txt");
     
-    if (username == un && pw == password)
+    if (read.is_open())
     {
-        cout << "User has successfully signed up! " << endl;
-        return true;
-    }
+        getline(read, un);
+        getline(read, pw);
+        
+        if (un == username && pw == password) 
+        {
+            cout << "User has successfully signed up! " << endl;
+            return true;
+        }
     else 
     {
         cout << "Details are incorrect, please input details again! " << endl;
-        signUp(choice); /* recurse till user details are viable for signing up */
+        isLoggedIn(choice);
+        return false;
     }
+   } 
 }
+
 
 
 void choiceFunction()
 {
     string choice;
+    
+    cout << endl; /* added space for aesthetics */
+    cout << "Main menu" << endl;
+    
+    
+    cout << endl;
     cout << "Would you like to sign up/login? " << endl;
     cin >> choice;
     
     
-    if (choice == "login")
+    if (choice == "login" || choice == "Login")
     {
         cout << "You will be redirected to the login form... " << endl;
         isLoggedIn(choice);
     }
     else if (choice == "signup" || choice == "sign-up")
     {
-        cout << "You will be taken to the sign-up form... " << endl;
+        cout << "You will be directed to the sign-up form... " << endl;
         signUp(choice);
     }
     else
     {
         cout << "Input not recognized, please use a sensible input" << endl;
-        choiceFunction() /* keep recusing till right details are inputted  */
+        choiceFunction(); /* keep recusing till right details are inputted  */
     }
 }
 
