@@ -1,7 +1,7 @@
-/* C++ Login + Registration form  */
+// C++ Login + Registration form  
 
 #include <iostream>
-#include <fstream> /* importing file library */
+#include <fstream> // importing file library 
 #include <string>
 #include <sqlite3.h> // database for users
 
@@ -9,78 +9,56 @@ using namespace std;
 
 
 
-bool isLoggedIn(const string& choice) {
-    string username, password;
-    string storedUsername, storedPassword;  // Define storedPassword here
+bool isLoggedIn(std::string choice) {
+    std::string username, password;
+    std::string storedUsername = "John";
+    std::string storedPassword = "Doe";
+    bool loggedInConfo = false;
 
-    cout << "Enter your username: ";
-    cin >> username;
+    while (!loggedInConfo) {
+        std::cout << "Enter your username: " << std::endl;
+        std::cin >> username;
 
-    cout << "Enter your password: ";
-    cin >> password;
+        std::cout << "Enter your password: " << std::endl;
+        std::cin >> password;
 
-    ifstream read(username + ".txt");
+        std::cout << "Logging in... " << std::endl;
 
-    if (read.is_open()) {
-        getline(read, storedUsername);
-        getline(read, storedPassword);
-
-        if (storedUsername == username && storedPassword == password) {
-            cout << "User has successfully logged in!" << endl;
-
-            cout << endl;
-
-            cout << "Welcome " << username << endl;
-
-            cout << endl;
-
-            cout << username << "'s " << "Dashboard: " << endl;
-
+        if (username == storedUsername && password == storedPassword) {
+            std::cout << "Login Success! " << std::endl;
+            loggedInConfo = true;
         } else {
-            cout << "Details are incorrect. Please input details again!" << endl;
-            return false;
+            std::cout << "Details are incorrect, please input details again. " << std::endl;
         }
-    } else {
-        cout << "User not found. Please input details again!" << endl;
-        isLoggedIn(choice);
     }
 
+    // This part of the code will proceed to read from the database and compare the input to the stored values in the given database,
+    // If they are matched, then the user will then see their dashboard
+
+    return loggedInConfo;
 }
 
-bool signUp(string choice)
+bool signUp(string choice) 
 {
-    
     string username, password;
-    string un, pw;
+    bool signUpSuccess = false;
     
-    cout << "Enter a username: " << endl;
-    cin >> username;
-    
-    cout << endl; /* added space */
-    cout << "Enter a password: " << endl; /* make a process to encrypt user/passwords */
-    cin >> password;
-    
-    cout << "Signing up... " << endl;
-    
-    ifstream read(username + ".txt");
-    
-    if (read.is_open())
+
+    while (!signUpSuccess) 
     {
-        getline(read, un);
-        getline(read, pw);
-        
-        if (un == username && pw == password) 
-        {
-            cout << "User has successfully signed up! " << endl;
-            return true;
-        }
-    else 
-    {
-        cout << "Details are incorrect, please input details again! " << endl;
-        isLoggedIn(choice);
-        return false;
+        cout << "Enter a username: " << endl;
+        cin >> username;
+    
+        cout << endl;
+        cout << "Enter a password: " << endl; 
+        cin >> password;
+    
+        cout << "Signing up... " << endl;
+        signUpSuccess = true;
     }
-   } 
+    
+    return signUpSuccess;
+    // this part of the code will append the username and password given here into the database, other measures will be made to ensure that the passwords are secure (i.e. encryption techniques)    
 }
 
 
@@ -89,7 +67,7 @@ void choiceFunction()
 {
     string choice;
     
-    cout << endl; /* added space for aesthetics */
+    cout << endl; 
     cout << "Main menu" << endl;
     
     
@@ -101,7 +79,7 @@ void choiceFunction()
     if (choice == "login" || choice == "Login")
     {
         cout << "You will be redirected to the login form... " << endl;
-        isLoggedIn(choice);
+        bool loginResult = isLoggedIn(choice);
     }
     else if (choice == "signup" || choice == "sign-up")
     {
@@ -111,7 +89,7 @@ void choiceFunction()
     else
     {
         cout << "Input not recognized, please use a sensible input" << endl;
-        choiceFunction(); /* keep recusing till right details are inputted  */
+        choiceFunction(); // keep recusing till right details are inputted  
     }
 }
 
@@ -119,6 +97,23 @@ void choiceFunction()
 int main()
 {
     sqlite3* db;
-    choiceFunction();
+    int rc; // return code
+
+    rc = sqlite3_open("users.db", &db);
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Database has not been connected... " << endl;
+        sqlite3_close(db);
+        return 1; // indicating error
+    }
+    else 
+    {
+        cout << "Database connection has been intialized! " << endl;
+    }
+
+    choiceFunction(); // once database connection is established, proceed to go to the sign-in/login page
+
+    sqlite3_close(db);
     return 0;
 }
