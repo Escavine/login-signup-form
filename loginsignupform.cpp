@@ -3,43 +3,49 @@
 #include <iostream>
 #include <fstream> /* importing file library */
 #include <string>
+#include <sqlite3.h> // database for users
 
 using namespace std;
 
 
-bool isLoggedIn(string choice) {
-    
-    string username, password;
-    string un, pw;
-    
-    cout << "Enter your username: " << endl;
-    cin >> username;
-    
-    cout << endl; /* added space */
-    cout << "Enter your password: " << endl;
-    cin >> password;
-    
-    
-    ifstream read(username + ".txt");
-    
-    if (read.is_open())
-    {
-        getline(read, un);
-        getline(read, pw);
-        
-        if (un == username && pw == password) {
-            cout << "User has successfully logged in! " << endl;
-            return true;
-        }
-    else 
-    {
-        cout << "Details are incorrect, please input details again! " << endl;
-        isLoggedIn(choice);
-        return false;
-    }
-  }
-}
 
+bool isLoggedIn(const string& choice) {
+    string username, password;
+    string storedUsername, storedPassword;  // Define storedPassword here
+
+    cout << "Enter your username: ";
+    cin >> username;
+
+    cout << "Enter your password: ";
+    cin >> password;
+
+    ifstream read(username + ".txt");
+
+    if (read.is_open()) {
+        getline(read, storedUsername);
+        getline(read, storedPassword);
+
+        if (storedUsername == username && storedPassword == password) {
+            cout << "User has successfully logged in!" << endl;
+
+            cout << endl;
+
+            cout << "Welcome " << username << endl;
+
+            cout << endl;
+
+            cout << username << "'s " << "Dashboard: " << endl;
+
+        } else {
+            cout << "Details are incorrect. Please input details again!" << endl;
+            return false;
+        }
+    } else {
+        cout << "User not found. Please input details again!" << endl;
+        isLoggedIn(choice);
+    }
+
+}
 
 bool signUp(string choice)
 {
@@ -51,7 +57,7 @@ bool signUp(string choice)
     cin >> username;
     
     cout << endl; /* added space */
-    cout << "Enter a password: " << endl;
+    cout << "Enter a password: " << endl; /* make a process to encrypt user/passwords */
     cin >> password;
     
     cout << "Signing up... " << endl;
@@ -110,7 +116,9 @@ void choiceFunction()
 }
 
 
-int main() {
+int main()
+{
+    sqlite3* db;
     choiceFunction();
     return 0;
 }
