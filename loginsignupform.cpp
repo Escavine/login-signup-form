@@ -2,14 +2,15 @@
 
 #include <iostream>
 #include <fstream> // importing file library 
-#include <string>
-#include <sqlite3.h> // database for users
+#include <string>  // database for users
+#include <sqlite3.h> 
+
 
 using namespace std;
 
 
 
-bool isLoggedIn(std::string choice) {
+bool isLoggedIn(std::int choice) {
     std::string username, password;
     std::string storedUsername = "John";
     std::string storedPassword = "Doe";
@@ -65,23 +66,24 @@ bool signUp(string choice)
 
 void choiceFunction()
 {
-    string choice;
+    int choice;
     
     cout << endl; 
     cout << "Main menu" << endl;
     
     
     cout << endl;
-    cout << "Would you like to sign up/login? " << endl;
+    cout << "1. Sign up " << endl;
+    cout << "2. Login " << endl;      //cout << "Would you like to sign up/login? " << endl;
     cin >> choice;
     
     
-    if (choice == "login" || choice == "Login")
+    if (choice == 2)
     {
         cout << "You will be redirected to the login form... " << endl;
         bool loginResult = isLoggedIn(choice);
     }
-    else if (choice == "signup" || choice == "sign-up")
+    else if (choice == 1)
     {
         cout << "You will be directed to the sign-up form... " << endl;
         signUp(choice);
@@ -112,6 +114,7 @@ int main()
         cout << "Database connection has been intialized! " << endl;
     }
 
+    cout << "Test 1 successful" << endl; // if this part works, then this section works 
     choiceFunction(); // once database connection is established, proceed to go to the sign-in/login page
 
     sqlite3_close(db);
