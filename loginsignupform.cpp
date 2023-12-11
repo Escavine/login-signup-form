@@ -3,33 +3,33 @@
 #include <iostream>
 #include <fstream> // importing file library 
 #include <string>  // database for users
-#include <sqlite3.h> 
+#include <sqlite3.h>
 
 
 using namespace std;
 
 
 
-bool isLoggedIn(std::int choice) {
-    std::string username, password;
-    std::string storedUsername = "John";
-    std::string storedPassword = "Doe";
+bool isLoggedIn(int choice) {
+    string username, password;
+    string storedUsername = "John"; //subjected to change as this is not dynamic and will need to link to sql
+    string storedPassword = "Doe";
     bool loggedInConfo = false;
 
     while (!loggedInConfo) {
-        std::cout << "Enter your username: " << std::endl;
-        std::cin >> username;
+        cout << "Enter your username: " << endl;
+        cin >> username;
 
-        std::cout << "Enter your password: " << std::endl;
-        std::cin >> password;
+        cout << "Enter your password: " << endl;
+        cin >> password;
 
-        std::cout << "Logging in... " << std::endl;
+        cout << "Logging in... " << endl;
 
         if (username == storedUsername && password == storedPassword) {
-            std::cout << "Login Success! " << std::endl;
+            cout << "Login Success! " << endl;
             loggedInConfo = true;
         } else {
-            std::cout << "Details are incorrect, please input details again. " << std::endl;
+            cout << "Details are incorrect, please input details again. " << endl;
         }
     }
 
@@ -39,7 +39,7 @@ bool isLoggedIn(std::int choice) {
     return loggedInConfo;
 }
 
-bool signUp(string choice) 
+bool signUp(int choice) 
 {
     string username, password;
     bool signUpSuccess = false;
@@ -58,7 +58,7 @@ bool signUp(string choice)
         signUpSuccess = true;
     }
     
-    return signUpSuccess;
+    return signUpSuccess; // confirms output
     // this part of the code will append the username and password given here into the database, other measures will be made to ensure that the passwords are secure (i.e. encryption techniques)    
 }
 
