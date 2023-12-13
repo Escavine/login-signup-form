@@ -84,6 +84,7 @@ bool isLoggedIn(int choice, int retryAttempts) {
         {
             cout << "User authenticated.\n" << endl;
             loggedInConfo = true;
+            break;
         }
         else 
         {
@@ -183,24 +184,24 @@ bool signUp(int choice, int retryAttempts)
         int result = sqlite3_step(stmt); // insert the new user to the database once compilation is completed
 
 
-        if (result == SQLITE_DONE)
-        {
-            cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append
-            signUpSuccess = true;
-        }
-        else 
+        if (result != SQLITE_DONE)
         {
             cerr << "Sign up has failed to insert to the database " << endl;
-
+        
             if (retryAttempts > 0)
             {
-                isLoggedIn(choice, retryAttempts - 1); // recurse to allow user to input their details again till they are correct.
+                isLoggedIn(choice, retryAttempts - 1);
             }
             else
             {
-                cerr << "Too many attempts made, terminating... "; 
+                cerr << "Too many attempts, program terminating...";
                 exit(0);
             }
+        }
+        else 
+        {
+            cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append
+            signUpSuccess = true;
         }
     }
 
