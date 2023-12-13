@@ -1,9 +1,10 @@
 // C++ Login + Registration form  
 
+// pre-requisite libraries
 #include <iostream>
-#include <fstream> // importing file library 
-#include <string>  // database for users
-#include <sqlite3.h>
+#include <fstream> 
+#include <string>  
+#include <sqlite3.h> // header library for SQL command utilisation
 
 
 using namespace std;
@@ -13,8 +14,8 @@ using namespace std;
 bool isLoggedIn(int choice) {
     string un, pw;
     int rc; // return code 
-    bool loggedInConfo = false;
-    sqlite3_stmt *stmt; // initialise the statement function
+    bool loggedInConfo = false; // local variables
+    sqlite3_stmt *stmt; 
     sqlite3* db;
 
     while (!loggedInConfo) {
@@ -42,7 +43,7 @@ bool isLoggedIn(int choice) {
         }
 
         const char* sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-        ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); // initialize sql usage
+        ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
 
         if (rc != SQLITE_OK)
         {
@@ -103,19 +104,15 @@ bool isLoggedIn(int choice) {
         }
         else 
         {
-            cout << "Sign up has failed\n" << endl;
+            cout << "Details are incorrect, please try again\n" << endl;
             sqlite3_finalize(stmt);
             sqlite3_close(db);
+            isLoggedIn(choice); // recurse to allow user to input their details again till they are correct.
             return 1; // indicate an issue
         }
 
-    loggedInConfo = true;
-}
-
-
-
-    // This part of the code will proceed to read from the database and compare the input to the stored values in the given database,
-    // If they are matched, then the user will then see their dashboard
+        loggedInConfo = true;
+    }
 
     return loggedInConfo;
 }
@@ -123,7 +120,7 @@ bool isLoggedIn(int choice) {
 bool signUp(int choice) 
 {
     string un, pw;
-    bool signUpSuccess = false;
+    bool signUpSuccess = false; // local variables
     sqlite3_stmt* stmt;
     int rc;
     sqlite3* db;
@@ -138,7 +135,6 @@ bool signUp(int choice)
     
         cout << "Signing up... \n";
 
-        // prepare to insert a new user to the database
         rc = sqlite3_open("users.db", &db);
 
         if (rc != SQLITE_OK) {
@@ -154,7 +150,7 @@ bool signUp(int choice)
         }
 
         const char* sql = "INSERT INTO users (un, pw), VALUES (?, ?)"
-        ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+        ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
 
         if (rc != SQLITE_OK)
         {
@@ -170,7 +166,6 @@ bool signUp(int choice)
             return 0;
         }
 
-        // bind the information to the following columns username and password on the user database, the password will need to be hashed soon for security purposes...
         rc = sqlite3_bind_text(stmt, 1, un.c_str(), -1, SQLITE_STATIC);
 
         if (rc != SQLITE_OK) {
@@ -187,11 +182,11 @@ bool signUp(int choice)
         }
 
 
-        rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC); 
 
 
         if (rc != SQLITE_OK)
-        {
+        { 
             cerr << "Error binding password\n" << endl;
             sqlite3_finalize(stmt);
             sqlite3_close(db);
@@ -204,12 +199,12 @@ bool signUp(int choice)
             return 0;
         }
 
-        int result = sqlite3_step(stmt); // once compiled, then the change is appended to the database
+        int result = sqlite3_step(stmt); // insert the new user to the database once compilation is completed
 
 
         if (result == SQLITE_DONE)
         {
-            cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append.
+            cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append
             sqlite3_finalize(stmt);
             return 0;
         }
@@ -221,10 +216,11 @@ bool signUp(int choice)
             return 1;
         }
         signUpSuccess = true;
+
+
     }
     
-    return signUpSuccess; // confirms output
-    // this part of the code will append the username and password given here into the database, other measures will be made to ensure that the passwords are secure (i.e. encryption techniques)    
+    return signUpSuccess; // confirms output, other measures will be made to ensure that the passwords are secure (i.e. encryption techniques such as a hash salt)    
 }
 
 
@@ -258,7 +254,7 @@ void choiceFunction()
     else
     {
         cout << "Input not recognized, please use a sensible input" << endl;
-        choiceFunction(); // keep recusing till right details are inputted  
+        choiceFunction(); // keep recusing till right input is made 
     }
 }
 
