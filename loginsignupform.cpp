@@ -5,6 +5,7 @@
 #include <fstream> 
 #include <string>  
 #include <sqlite3.h> // header library for SQL command utilisation
+#include <stdlib.h>
 
 
 using namespace std;
@@ -61,7 +62,7 @@ bool isLoggedIn(int choice, int retryAttempts) {
         }
 
 
-        rc = sqlite3_bind_text(stmt, 1, pw.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC);
 
         if (rc != SQLITE_OK)
         {
@@ -87,7 +88,16 @@ bool isLoggedIn(int choice, int retryAttempts) {
         else 
         {
             cerr << "Details are incorrect, please try again\n" << endl;
-            isLoggedIn(choice, retryAttempts); // recurse to allow user to input their details again till they are correct.
+
+            if (retryAttempts > 0)
+            {
+                isLoggedIn(choice, retryAttempts - 1); // recurse to allow user to input their details again till they are correct.
+            }
+            else
+            {
+                cerr << "Too many attempts made, terminating... ";
+                exit(0);
+            }
         }
     }
     sqlite3_finalize(stmt);
@@ -110,25 +120,21 @@ bool signUp(int choice, int retryAttempts)
 
     if (rc != SQLITE_OK) 
     {
-        cerr << "Database has not been initialized\n ";
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return 1;
+        cerr << "Database has not been initialized\n " << endl;
+        return false;
     }
     else
     {
-        cout << "Database has been initialized\n";
+        cout << "Database has been initialized\n" << endl;
     }
 
-    const char* sql = "INSERT INTO users (un, pw), VALUES (?, ?)"
+    const char* sql = "INSERT INTO users (username, password) VALUES (?, ?)";
     ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
 
     if (rc != SQLITE_OK)
     {
         cerr << "Error preparing statement\n" << endl;
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return 1;
+        return false;
     }
     else 
     {
@@ -151,12 +157,11 @@ bool signUp(int choice, int retryAttempts)
             cerr << "Error binding username\n" << endl;
             sqlite3_finalize(stmt);
             sqlite3_close(db);
-            return 1;
+            break;
         }
         else 
         {
             cout << "Sucessfully binded username\n" << endl;
-            sqlite3_finalize(stmt);
         }
 
 
@@ -168,12 +173,11 @@ bool signUp(int choice, int retryAttempts)
             cerr << "Error binding password\n" << endl;
             sqlite3_finalize(stmt);
             sqlite3_close(db);
-            return 1;
+            break;
         }
         else 
         {
             cout << "Sucessfully binded password\n" << endl;
-            sqlite3_finalize(stmt);
         }
 
         int result = sqlite3_step(stmt); // insert the new user to the database once compilation is completed
@@ -182,19 +186,27 @@ bool signUp(int choice, int retryAttempts)
         if (result == SQLITE_DONE)
         {
             cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append
-            sqlite3_finalize(stmt);
+            signUpSuccess = true;
         }
         else 
         {
             cerr << "Sign up has failed to insert to the database " << endl;
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
 
-            signUp(choice, retryAttempts - 1); // due to incorrect information, the users attempts drop
-            return 1;
+            if (retryAttempts > 0)
+            {
+                isLoggedIn(choice, retryAttempts - 1); // recurse to allow user to input their details again till they are correct.
+            }
+            else
+            {
+                cerr << "Too many attempts made, terminating... "; 
+                exit(0);
+            }
         }
-        signUpSuccess = true;
     }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
     return signUpSuccess; // confirms output, other measures will be made to ensure that the passwords are secure (i.e. encryption techniques such as a hash salt)    
 }
 
@@ -225,7 +237,7 @@ void choiceFunction()
     if (choice == 1)
     {
         cout << "You will be redirected to the sign-up form... " << endl;
-        signUp(choice, retryAttempts);
+        bool signUpProcess = signUp(choice, retryAttempts);
     }
     else if (choice == 2)
     {
