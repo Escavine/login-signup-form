@@ -104,7 +104,7 @@ bool isLoggedIn(int choice) {
         }
         else 
         {
-            cout << "Details are incorrect, please try again\n" << endl;
+            cerr << "Details are incorrect, please try again\n" << endl;
             sqlite3_finalize(stmt);
             sqlite3_close(db);
             isLoggedIn(choice); // recurse to allow user to input their details again till they are correct.
@@ -138,7 +138,7 @@ bool signUp(int choice)
         rc = sqlite3_open("users.db", &db);
 
         if (rc != SQLITE_OK) {
-            cout << "Database has not been initialized ";
+            cerr << "Database has not been initialized ";
             sqlite3_close(db);
             return 1;
         }
@@ -253,7 +253,7 @@ void choiceFunction()
     }
     else
     {
-        cout << "Input not recognized, please use a sensible input" << endl;
+        cerr << "Input not recognized, please use a sensible input" << endl;
         choiceFunction(); // keep recusing till right input is made 
     }
 }
