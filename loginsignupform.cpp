@@ -31,14 +31,15 @@ bool isLoggedIn(int choice) {
         if (rc != SQLITE_OK)
         {
             cerr << "Database connection hasn't been initialized";
+            sqlite3_close(db);
             return false;
         }
         else 
         {
             cout << "Database connection has been initialized";
+            sqlite3_finalize(stmt);
             return true;
         }
-
 
         const char* sql = "SELECT * FROM users WHERE username = ? AND password = ?";
         ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); // initialize sql usage
@@ -53,6 +54,7 @@ bool isLoggedIn(int choice) {
         else 
         {
             cout << "Statement initialization completed\n";
+            sqlite3_finalize(stmt);
             return true;
         }
 
@@ -69,6 +71,7 @@ bool isLoggedIn(int choice) {
         else
         {
             cout << "Username has been initialized\n";
+            sqlite3_finalize(stmt);
             return true;
 
         }
@@ -86,14 +89,16 @@ bool isLoggedIn(int choice) {
         else
         {
             cout << "Password has been intialized\n";
+            sqlite3_finalize(stmt);
             return true;
         }
 
         int result = sqlite3_step(stmt);
 
-        if (result == SQLITE_DONE)
+        if (result == SQLITE_ROW)
         {
-            cout << "Sign up has been successful and has appended to the database\n" << endl;
+            cout << "User authenticated.\n" << endl;
+            sqlite3_finalize(stmt);
             return 0;
         }
         else 
@@ -138,11 +143,13 @@ bool signUp(int choice)
 
         if (rc != SQLITE_OK) {
             cout << "Database has not been initialized ";
+            sqlite3_close(db);
             return 1;
         }
         else 
         {
             cout << "Database has been initialized ";
+            sqlite3_finalize(stmt);
             return 0;
         }
 
@@ -159,6 +166,7 @@ bool signUp(int choice)
         else 
         {
             cout << "Sucessfully prepared statement\n" << endl;
+            sqlite3_finalize(stmt);
             return 0;
         }
 
@@ -174,6 +182,7 @@ bool signUp(int choice)
         else 
         {
             cout << "Sucessfully binded username\n" << endl;
+            sqlite3_finalize(stmt);
             return 0;
         }
 
@@ -191,6 +200,7 @@ bool signUp(int choice)
         else 
         {
             cout << "Sucessfully binded password\n" << endl;
+            sqlite3_finalize(stmt);
             return 0;
         }
 
@@ -200,6 +210,7 @@ bool signUp(int choice)
         if (result == SQLITE_DONE)
         {
             cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append.
+            sqlite3_finalize(stmt);
             return 0;
         }
         else 
