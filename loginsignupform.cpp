@@ -5,12 +5,10 @@
 #include <fstream> 
 #include <string>  
 #include <sqlite3.h> // header library for SQL command utilisation
-#include <stdlib.h>
+#include <stdlib.h> // standard library 
 
 
 using namespace std;
-
-
 
 
 // void hashingAlgorithm() {} // for further encrypting the password
@@ -21,27 +19,33 @@ void loginSession(bool loggedInConfo) {
     string logoutConfo;
     int rc;
 
+    sqlite3_open("users.db", &db); // open the database
 
-
-    cout << "Welcome to my reminders ";
-    const char* query = "SELECT list-schedule FROM users WHERE list-schedule == userID";
+    cout << "Welcome to my reminders\n";
+    const char* query = "SELECT reminders FROM users where reminders == userID";
     sqlite3_stmt* stmt;
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
     if (rc != SQLITE_OK)
     {
-        cout << "List has failed to load ";
+        cout << "List has failed to load\n";
     }
+    else 
+    {
+        cout << "List is loading...\n";
+    }
+
+    int result = sqlite3_step(stmt);
     
-    while (sqlite3_step(stmt) == SQLITE_ROW)
+    while (result == SQLITE_ROW)
     {
         const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
 
-        cout << "Current reminder " << reminder << endl;
+        cout << "Current reminder: " << reminder << endl;
     }
 
-    cout << "Would you like to log out? ";
+    cout << "Would you like to log out?\n";
     cin >> logoutConfo;
 
     if (logoutConfo == "Yes" | logoutConfo == "yes")
