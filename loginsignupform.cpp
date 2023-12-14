@@ -12,6 +12,50 @@ using namespace std;
 
 
 
+
+// void hashingAlgorithm() {} // for further encrypting the password
+
+
+void loginSession(bool loggedInConfo) { 
+    sqlite3* db;
+    string logoutConfo;
+    int rc;
+
+
+
+    cout << "Welcome to my reminders ";
+    const char* query = "SELECT list-schedule FROM users WHERE list-schedule == userID";
+    sqlite3_stmt* stmt;
+
+    rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+
+    if (rc != SQLITE_OK)
+    {
+        cout << "List has failed to load ";
+    }
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+
+        cout << "Current reminder " << reminder << endl;
+    }
+
+    cout << "Would you like to log out? ";
+    cin >> logoutConfo;
+
+    if (logoutConfo == "Yes" | logoutConfo == "yes")
+    {
+        cout << "Log out initialized";
+        exit(0);
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+}
+
+
 bool isLoggedIn(int choice, int retryAttempts) {
     string un, pw;
     int rc; // return code 
@@ -84,6 +128,7 @@ bool isLoggedIn(int choice, int retryAttempts) {
         {
             cout << "User authenticated.\n" << endl;
             loggedInConfo = true;
+            loginSession(loggedInConfo); // lead the user to their session 
             break;
         }
         else 
@@ -106,7 +151,6 @@ bool isLoggedIn(int choice, int retryAttempts) {
 
     return loggedInConfo;
 }
-
 
 
 bool signUp(int choice, int retryAttempts) 
@@ -184,11 +228,11 @@ bool signUp(int choice, int retryAttempts)
         int result = sqlite3_step(stmt); // insert the new user to the database once compilation is completed
 
 
-        if (result != SQLITE_DONE)
+        if (result != SQLITE_DONE) 
         {
             cerr << "Sign up has failed to insert to the database " << endl;
         
-            if (retryAttempts > 0)
+            if (retryAttempts > 0) // mitigating infinite recursion to prevent stack overflow errors
             {
                 isLoggedIn(choice, retryAttempts - 1);
             }
@@ -202,21 +246,14 @@ bool signUp(int choice, int retryAttempts)
         {
             cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append
             signUpSuccess = true;
-        }
     }
 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 
     return signUpSuccess; // confirms output, other measures will be made to ensure that the passwords are secure (i.e. encryption techniques such as a hash salt)    
+    }
 }
-
-
-// void hashingAlgorithm() {} // for further encrypting the password
-
-
-// void loginSession { cout << Welcome to the My Reminders; 
-// const char* sql = "SELECT list-schedule FROM users WHERE list-schedule";
 
 
 
@@ -252,7 +289,6 @@ void choiceFunction()
     }
 }
 
-
 int main()
 {
     sqlite3* db;
@@ -270,9 +306,24 @@ int main()
     {
         cout << "Database connection has been intialized!\n" << endl;
     }
-
     choiceFunction(); // once database connection is established, proceed to go to the sign-in/login page
 
     sqlite3_close(db);
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
