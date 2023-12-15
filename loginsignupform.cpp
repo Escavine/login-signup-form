@@ -14,7 +14,7 @@ using namespace std;
 // void hashingAlgorithm() {} // for further encrypting the password
 
 
-void loginSession(bool loggedInConfo, int userID) { 
+void loginSession(bool loggedInConfo, int UID) { 
     sqlite3* db;
     string logoutConfo;
     int rc;
@@ -24,7 +24,7 @@ void loginSession(bool loggedInConfo, int userID) {
 
     cout << "Welcome to my reminders\n";
 
-    const char* query = "SELECT reminders FROM users;";
+    const char* query = "SELECT reminders FROM users WHERE userID = ?;";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
@@ -35,13 +35,16 @@ void loginSession(bool loggedInConfo, int userID) {
         sqlite3_close(db); // in the instance that user has failed to load, then the database will close
         exit(0);
     }
-    else 
+
+    rc = sqlite3_bind_int(stmt, 1, UID);
+
+    if (rc != SQLITE_OK)
     {
-        cout << "List is loading...\n";
+        cout << "UID has not been binded \n";
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
     }
 
-    sqlite3_step(stmt);
-    
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
         const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
@@ -130,11 +133,11 @@ bool isLoggedIn(int choice, int retryAttempts) {
 
         if (result == SQLITE_ROW)
         {
-            int userID = sqlite3_column_int(stmt, 0); // this will figure out userID of person
-            std::cout << "User ID: " << userID << std::endl;
+            int UID = sqlite3_column_int(stmt, 0); // this will figure out userID of person
+            std::cout << "User ID: " << UID << std::endl;
             cout << "User authenticated.\n" << endl;
             loggedInConfo = true;
-            loginSession(loggedInConfo, userID);
+            loginSession(loggedInConfo, UID);
             break;
         }
         else 
