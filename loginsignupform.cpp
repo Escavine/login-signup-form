@@ -18,9 +18,24 @@ void loginSession(bool loggedInConfo) {
     sqlite3* db;
     string logoutConfo;
     int rc;
-    int userID;
+    sqlite3* stmt;
 
     sqlite3_open("users.db", &db); // open the database
+
+
+    const char* userIdentifier = "SELECT userID FROM users;";
+
+    sqlite3_prepare_v2(db, userIdentifier, -1, &stmt, nullptr);
+
+    int userIdentity = sqlite3_step(stmt);
+
+
+
+
+
+
+
+
 
     cout << "Welcome to my reminders\n";
     const char* query = "SELECT reminders from users where userID = ?";
@@ -39,17 +54,6 @@ void loginSession(bool loggedInConfo) {
     else 
     {
         cout << "List is loading...\n";
-    }
-
-    rc = sqlite3_bind_int(stmt, 1, userID);
-
-    if (rc != SQLITE_OK) 
-    {
-        cout << "Error binding userID\n";
-    }
-    else 
-    {
-        cout << "Sucessfully binded userID\n"; // the return codes are testing measures to ensure everything is in place, once confirmed they'll be removed
     }
 
     sqlite3_step(stmt);
@@ -146,7 +150,7 @@ bool isLoggedIn(int choice, int retryAttempts) {
         {
             cout << "User authenticated.\n" << endl;
             loggedInConfo = true;
-            loginSession(loggedInConfo); // lead the user to their session 
+            loginSession(loggedInConfo);
             break;
         }
         else 
@@ -163,6 +167,7 @@ bool isLoggedIn(int choice, int retryAttempts) {
                 exit(0);
             }
         }
+
     }
     sqlite3_finalize(stmt);
     sqlite3_close(db);
