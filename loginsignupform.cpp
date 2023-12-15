@@ -14,35 +14,19 @@ using namespace std;
 // void hashingAlgorithm() {} // for further encrypting the password
 
 
-void loginSession(bool loggedInConfo) { 
+void loginSession(bool loggedInConfo, int userID) { 
     sqlite3* db;
     string logoutConfo;
     int rc;
-    sqlite3* stmt;
+    sqlite3_stmt* stmt;
 
     sqlite3_open("users.db", &db); // open the database
 
-
-    const char* userIdentifier = "SELECT userID FROM users;";
-
-    sqlite3_prepare_v2(db, userIdentifier, -1, &stmt, nullptr);
-
-    int userIdentity = sqlite3_step(stmt);
-
-
-
-
-
-
-
-
-
     cout << "Welcome to my reminders\n";
-    const char* query = "SELECT reminders from users where userID = ?";
-    sqlite3_stmt* stmt;
 
-    ;rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+    const char* query = "SELECT reminders FROM users;";
 
+    rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
     if (rc != SQLITE_OK)
     {
@@ -61,7 +45,6 @@ void loginSession(bool loggedInConfo) {
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
         const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-
         cout << "Current reminder: " << reminder << endl;
     }
 
@@ -89,7 +72,6 @@ bool isLoggedIn(int choice, int retryAttempts) {
     bool loggedInConfo = false; // local variables
     sqlite3_stmt *stmt; 
     sqlite3* db;
-    int userID; // this will be used to figure out the user ID of the individual
 
     rc = sqlite3_open("users.db", &db);
 
@@ -148,9 +130,11 @@ bool isLoggedIn(int choice, int retryAttempts) {
 
         if (result == SQLITE_ROW)
         {
+            int userID = sqlite3_column_int(stmt, 0); // this will figure out userID of person
+            std::cout << "User ID: " << userID << std::endl;
             cout << "User authenticated.\n" << endl;
             loggedInConfo = true;
-            loginSession(loggedInConfo);
+            loginSession(loggedInConfo, userID);
             break;
         }
         else 
@@ -174,6 +158,7 @@ bool isLoggedIn(int choice, int retryAttempts) {
 
     return loggedInConfo;
 }
+
 
 
 bool signUp(int choice, int retryAttempts) 
