@@ -18,33 +18,52 @@ void loginSession(bool loggedInConfo) {
     sqlite3* db;
     string logoutConfo;
     int rc;
+    int userID;
 
     sqlite3_open("users.db", &db); // open the database
 
     cout << "Welcome to my reminders\n";
-    const char* query = "SELECT reminders FROM users where reminders == userID";
+    const char* query = "SELECT reminders from users where userID = ?";
     sqlite3_stmt* stmt;
 
-    rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+    ;rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+
 
     if (rc != SQLITE_OK)
     {
         cout << "List has failed to load\n";
+        sqlite3_finalize(stmt);
+        sqlite3_close(db); // in the instance that user has failed to load, then the database will close
+        exit(0);
     }
     else 
     {
         cout << "List is loading...\n";
     }
 
-    int result = sqlite3_step(stmt);
+    rc = sqlite3_bind_int(stmt, 1, userID);
+
+    if (rc != SQLITE_OK) 
+    {
+        cout << "Error binding userID\n";
+    }
+    else 
+    {
+        cout << "Sucessfully binded userID\n"; // the return codes are testing measures to ensure everything is in place, once confirmed they'll be removed
+    }
+
+    sqlite3_step(stmt);
     
-    while (result == SQLITE_ROW)
+    while (sqlite3_step(stmt) == SQLITE_ROW)
     {
         const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
 
         cout << "Current reminder: " << reminder << endl;
     }
 
+
+    cout << "Options \n" << endl;
+    cout << endl;
     cout << "Would you like to log out?\n";
     cin >> logoutConfo;
 
@@ -66,14 +85,9 @@ bool isLoggedIn(int choice, int retryAttempts) {
     bool loggedInConfo = false; // local variables
     sqlite3_stmt *stmt; 
     sqlite3* db;
+    int userID; // this will be used to figure out the user ID of the individual
 
     rc = sqlite3_open("users.db", &db);
-
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Database connection hasn't been initialized";
-        return false;
-    }
 
     const char* sql = "SELECT * FROM users WHERE username = ? AND password = ?";
     ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
@@ -166,16 +180,6 @@ bool signUp(int choice, int retryAttempts)
     sqlite3* db;
 
     rc = sqlite3_open("users.db", &db);
-
-    if (rc != SQLITE_OK) 
-    {
-        cerr << "Database has not been initialized\n " << endl;
-        return false;
-    }
-    else
-    {
-        cout << "Database has been initialized\n" << endl;
-    }
 
     const char* sql = "INSERT INTO users (username, password) VALUES (?, ?)";
     ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
