@@ -16,15 +16,22 @@ using namespace std;
 
 void loginSession(bool loggedInConfo, int UID) { 
     sqlite3* db;
-    string logoutConfo;
     int rc;
     sqlite3_stmt* stmt;
+    int choice;
+    int numOfReminders;
 
-    sqlite3_open("users.db", &db); // open the database
+    sqlite3_open("users.db", &db); 
+    rc = sqlite3_open("reminderPrompt.db", &db); 
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Reminders database has not been initialized!\n"; // testing measures
+    }
 
     cout << "Welcome to my reminders\n";
 
-    const char* query = "SELECT reminders FROM users WHERE userID = ?;";
+    const char* query = "SELECT reminderPrompt FROM reminders WHERE userID = ?;";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
@@ -54,13 +61,54 @@ void loginSession(bool loggedInConfo, int UID) {
 
     cout << "Options \n" << endl;
     cout << endl;
-    cout << "Would you like to log out?\n";
-    cin >> logoutConfo;
+    cout << "1. Add reminders\n";
+    cout << "2. Log out \n";
+    cin >> choice;
 
-    if (logoutConfo == "Yes" | logoutConfo == "yes")
+    if (choice == 1)
     {
-        cout << "Log out initialized";
+        int i;
+        cout << "How many reminders do you want?";
+        cin >> numOfReminders;
+
+        for (i = 0; numOfReminders; i++)
+        {
+            string reminderInput;
+            cout << "Reminder no. " << i; // the value i will keep incrementing to indicate the number of reminder
+            cin >> reminderInput;
+            
+            sqlite3_open("reminderPrompt.db", &db);
+
+            const char* addReminder = "SELECT reminder FROM reminderPrompt;";
+
+            sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+
+            rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
+
+            if (rc != SQLITE_OK)
+            {
+                cerr << "Reminder binding has failed!\n";
+            }
+            else 
+            {
+                cout << "Reminder binding successful\n"; // testing measures
+            }
+
+            rc = sqlite3_step(stmt);
+
+        }
+
+    }
+    else if (choice == 2)
+    {
+        cout << "Log out initiated, see you soon!\n" << endl;
         exit(0);
+    }
+
+    else 
+    {
+        cout << "Invalid input, try again";
+        loginSession(loggedInConfo, UID); // recurse till correct info is inputted
     }
 
     sqlite3_finalize(stmt);
@@ -290,6 +338,7 @@ void choiceFunction()
     }
 }
 
+
 int main()
 {
     sqlite3* db;
@@ -297,16 +346,26 @@ int main()
 
     rc = sqlite3_open("users.db", &db);
 
-    if (rc != SQLITE_OK)
+    if (rc != SQLITE_OK) 
     {
-        cerr << "Database has not been connected...\n" << endl;
-        sqlite3_close(db);
-        return 1; // indicating error
+        cerr << "Users database hasn't been initialized\n";
     }
     else 
     {
-        cout << "Database connection has been intialized!\n" << endl;
+        cout << "Users database has been intialized\n"; // test
     }
+
+    rc = sqlite3_open("reminderPrompt.db", &db);
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Database hasn't been initialized\n";
+    }
+    else
+    {
+        cout << "Connection to database successful!\n";  // test
+    }
+
     choiceFunction(); // once database connection is established, proceed to go to the sign-in/login page
 
     sqlite3_close(db);
