@@ -96,6 +96,15 @@ void loginSession(bool loggedInConfo, int UID) {
 
             rc = sqlite3_step(stmt);
 
+            if (rc != SQLITE_OK)
+            {
+                cerr << "Reminder has failed to append to the database :( \n"; // testing measures
+            }
+            else
+            {
+                cout << "Reminder has successfully appended to the database\n";
+            }
+
         }
 
     }
