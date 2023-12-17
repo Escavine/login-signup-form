@@ -21,13 +21,7 @@ void loginSession(bool loggedInConfo, int UID) {
     int choice;
     int numOfReminders;
 
-    sqlite3_open("users.db", &db); 
-    rc = sqlite3_open("reminderPrompt.db", &db); 
-
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Reminders database has not been initialized!\n"; // testing measures
-    }
+    sqlite3_open("userdata.db", &db); 
 
     cout << "Welcome to my reminders\n";
 
@@ -77,7 +71,7 @@ void loginSession(bool loggedInConfo, int UID) {
             cout << "Reminder no. " << i; // the value i will keep incrementing to indicate the number of reminder
             cin >> reminderInput;
             
-            sqlite3_open("reminderPrompt.db", &db);
+            sqlite3_open("userdata.db", &db);
 
             const char* addReminder = "SELECT reminder FROM reminderPrompt;";
 
@@ -133,8 +127,9 @@ bool isLoggedIn(int choice, int retryAttempts)
     bool loggedInConfo = false; // local variables
     sqlite3_stmt *stmt; 
     sqlite3* db;
+    int result;
 
-    rc = sqlite3_open("users.db", &db);
+    rc = sqlite3_open("userdata.db", &db);
 
     if (rc != SQLITE_OK)
     {
@@ -147,7 +142,7 @@ bool isLoggedIn(int choice, int retryAttempts)
         cout << "Database has successfully loaded!\n"; // testing measures will be removed once completed
     }
 
-    const char* sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+    const char* sql = "SELECT userID, username, password FROM users WHERE username = ? AND password = ?";
     ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
 
     if (rc != SQLITE_OK)
@@ -179,6 +174,10 @@ bool isLoggedIn(int choice, int retryAttempts)
         sqlite3_close(db);
         return false;
     }
+    else 
+    {
+        cout << "Username processing complete... \n";
+    }
 
     rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC);
 
@@ -189,11 +188,15 @@ bool isLoggedIn(int choice, int retryAttempts)
         sqlite3_close(db);
         return false;
     }
-
-    int result = sqlite3_step(stmt);
+    else
+    {
+        cout << "Password processing complete... \n";
+    }
 
     do 
     { 
+        result = sqlite3_step(stmt);
+
         if (result == SQLITE_ROW)
         {
             int UID = sqlite3_column_int(stmt, 0); // this will figure out userID of the person
@@ -217,12 +220,11 @@ bool isLoggedIn(int choice, int retryAttempts)
                 break;
             }
         }
+
     } while (!loggedInConfo);
 
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
     return loggedInConfo;
-}
+} 
 
 bool signUp(int choice, int retryAttempts) 
 {
@@ -232,7 +234,7 @@ bool signUp(int choice, int retryAttempts)
     int rc;
     sqlite3* db;
 
-    rc = sqlite3_open("users.db", &db);
+    rc = sqlite3_open("userdata.db", &db);
 
     const char* sql = "INSERT INTO users (username, password) VALUES (?, ?)";
     ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
@@ -355,7 +357,7 @@ int main()
     sqlite3* db;
     int rc; // return code
 
-    rc = sqlite3_open("users.db", &db);
+    rc = sqlite3_open("userdata.db", &db);
 
     if (rc != SQLITE_OK) 
     {
@@ -364,17 +366,6 @@ int main()
     else 
     {
         cout << "Users database has been intialized\n"; // test
-    }
-
-    rc = sqlite3_open("reminderPrompt.db", &db);
-
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Database hasn't been initialized\n";
-    }
-    else
-    {
-        cout << "Reminders database has been initialized!\n";  // test
     }
 
     choiceFunction(); // once database connection is established, proceed to go to the sign-in/login page
