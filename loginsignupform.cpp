@@ -25,7 +25,7 @@ void loginSession(bool loggedInConfo, int UID) {
 
     cout << "Welcome to my reminders\n";
 
-    const char* query = "SELECT * FROM reminderPrompt";
+    const char* query = "SELECT userReminders FROM reminders where userID = ?";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
@@ -37,14 +37,17 @@ void loginSession(bool loggedInConfo, int UID) {
         exit(0);
     }
 
-    rc = sqlite3_bind_int(stmt, 1, UID);
+    rc = sqlite3_bind_int(stmt, 1, UID); // column for reminders
 
     if (rc != SQLITE_OK)
     {
-        cout << "UID has not been binded \n";
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
+        cerr << "Cannot find reminders \n";
     }
+    else 
+    {
+        cout << "Reminders have been found \n";
+    }
+
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
@@ -120,91 +123,76 @@ void loginSession(bool loggedInConfo, int UID) {
 } 
 
 
-bool isLoggedIn(int choice, int retryAttempts) 
-{
+bool isLoggedIn(int choice, int retryAttempts) {
     string un, pw;
     int rc; // return code 
     bool loggedInConfo = false; // local variables
     sqlite3_stmt *stmt; 
     sqlite3* db;
-    int result;
 
     rc = sqlite3_open("userdata.db", &db);
 
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Database failed to initialize \n";
-        sqlite3_close(db);
-        return false;
-    }
-    else 
-    {
-        cout << "Database has successfully loaded!\n"; // testing measures will be removed once completed
-    }
-
-    const char* sql = "SELECT userID, username, password FROM users WHERE username = ? AND password = ?";
+    const char* sql = "SELECT * FROM users WHERE username = ? AND password = ?";
     ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
 
     if (rc != SQLITE_OK)
     {
         cerr << "Error preparing statement\n";
-        sqlite3_finalize(stmt);
         sqlite3_close(db);
         return false;
-    }
-    else
-    {
-        cout << "Statement successfully initialized\n";
     }
  
-    cout << "Enter your username:\n";
-    cin >> un;
 
-    cout << "Enter your password:\n ";
-    cin >> pw;
+    while (!loggedInConfo) {
+        cout << "Enter your username:\n";
+        cin >> un;
 
-    cout << "Logging in...\n";
+        cout << "Enter your password:\n ";
+        cin >> pw;
 
-    rc = sqlite3_bind_text(stmt, 1, un.c_str(), -1, SQLITE_STATIC);
+        cout << "Logging in...\n";
 
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Error binding username\n";
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return false;
-    }
-    else 
-    {
-        cout << "Username processing complete... \n";
-    }
+        rc = sqlite3_bind_text(stmt, 1, un.c_str(), -1, SQLITE_STATIC);
 
-    rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC);
+        if (rc != SQLITE_OK)
+        {
+            cerr << "Error binding username\n";
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            break;
+        }
+        else
+        {
+            cout << "Username has been initialized\n";
+        }
 
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Password has not been initialized\n";
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return false;
-    }
-    else
-    {
-        cout << "Password processing complete... \n";
-    }
 
-    do 
-    { 
-        result = sqlite3_step(stmt);
+        rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC);
+
+        if (rc != SQLITE_OK)
+        {
+            cerr << "Password has not been initalized\n";
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            break;
+        }
+        else
+        {
+            cout << "Password has been intialized\n";
+
+        }
+
+
+        int result = sqlite3_step(stmt);
+
 
         if (result == SQLITE_ROW)
         {
-            int UID = sqlite3_column_int(stmt, 0); // this will figure out userID of the person
+            int UID = sqlite3_column_int(stmt, 0); // this will figure out userID of person
             cout << "User ID: " << UID << endl;
             cout << "User authenticated.\n" << endl;
             loggedInConfo = true;
             loginSession(loggedInConfo, UID);
-            break;
         }
         else 
         {
@@ -212,19 +200,22 @@ bool isLoggedIn(int choice, int retryAttempts)
 
             if (retryAttempts > 0)
             {
-                return isLoggedIn(choice, retryAttempts - 1); // recurse to allow the user to input their details again until they are correct.
+                isLoggedIn(choice, retryAttempts - 1); // recurse to allow user to input their details again till they are correct.
             }
             else
             {
                 cerr << "Too many attempts made, terminating... ";
-                break;
+                exit(0);
             }
         }
 
-    } while (!loggedInConfo);
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 
     return loggedInConfo;
-} 
+}
+
 
 bool signUp(int choice, int retryAttempts) 
 {
