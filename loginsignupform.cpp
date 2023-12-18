@@ -14,7 +14,8 @@ using namespace std;
 // void hashingAlgorithm() {} // for further encrypting the password
 
 
-void loginSession(bool loggedInConfo, int UID) { 
+void loginSession(bool loggedInConfo, int UID) 
+{ 
     sqlite3* db;
     int rc;
     sqlite3_stmt* stmt;
@@ -25,7 +26,7 @@ void loginSession(bool loggedInConfo, int UID) {
 
     cout << "Welcome to my reminders\n";
 
-    const char* query = "SELECT userReminders FROM reminders where userID = ?";
+    const char* query = "SELECT userReminders FROM reminders WHERE userID = ?";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
@@ -64,12 +65,16 @@ void loginSession(bool loggedInConfo, int UID) {
 
     if (choice == 1)
     {
+        int numOfReminders;
         int i;
         cout << "How many reminders do you want?";
         cin >> numOfReminders;
+        int count; // comparsion integer
+        bool reminderAppend = false; // this will be used to ensure that numOfReminder has been satisfied
 
-        for (i = 0; numOfReminders; i++)
+        while (!reminderAppend)
         {
+            string reminderInput;
             rc = sqlite3_open("userdata.db", &db);
 
             if (rc != SQLITE_OK)
@@ -78,46 +83,75 @@ void loginSession(bool loggedInConfo, int UID) {
                 sqlite3_finalize(stmt);
                 sqlite3_close(db);
             }
+            else 
+            {
+                cout << "Database connection initiated! \n";
+            }
 
             const char* addReminder = "INSERT INTO reminders (userReminders) VALUES (?);"; // prompt to add reminders to the reminders table
-            string reminderInput;
-            cout << "Write the details of the given reminder" << "(No.) " << i; // the value i will keep incrementing to indicate the number of reminder
+            cout << "Write the details of the given reminder" << "(No. " << i << ")"; // the value i will keep incrementing to indicate the number of reminder
             cin >> reminderInput;
             
+            rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr); // ready the SQL statement 
 
-            sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+            if (rc != SQLITE_OK)
+            {
+                cerr << "SQL statement initialization has failed!\n";
+            }
+            else 
+            {
+                cout << "SQL statement intialization success!\n"; // testing measures will be removed once fully working
+            }
+
 
             rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
 
             if (rc != SQLITE_OK)
             {
-                cerr << "Reminder binding has failed!\n";
+                cerr << "Failed to append the reminder!\n";
             }
             else 
             {
-                cout << "Reminder binding successful\n"; // testing measures
+                cout << "Successfully binded the reminder!\n"; // testing measures
             }
 
-            rc = sqlite3_step(stmt);
+            int result = sqlite3_step(stmt);
 
-            if (rc != SQLITE_OK)
+            if (result == SQLITE_DONE)
             {
-                cerr << "Reminder has failed to append to the database :( \n"; // testing measures
+                cout << "Reminder has successfully appended to the database! \n"; // testing measures
+                count++;
+
+                if (count == numOfReminders)
+                {
+                    reminderAppend = true; // in the instance that the set amount of reminders is met, exit the loop and go to burkina faso
+                    loginSession(loggedInConfo, UID) // return to login session to display updated reminders
+                }
             }
             else
             {
-                cout << "Reminder has successfully appended to the database\n";
+                cout << "Reminder has failed to append to database \n" << sqlite_errcode(stmt); // display error code to explain failure (TESTING MEASURE)
             }
 
         }
 
     }
+}
+
     else if (choice == 2)
     {
         cout << "Log out initiated, see you soon!\n" << endl;
+        int i;
+        int seconds = 5; // countdown
+
+        for (i = seconds; i >=0; i--)
+        {
+            cout << "Countdown intiated: " << i << "seconds" << endl;
+        }
+
         exit(0);
     }
-
+    
     else 
     {
         cout << "Invalid input, try again";
