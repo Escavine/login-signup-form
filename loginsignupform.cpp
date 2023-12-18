@@ -125,18 +125,17 @@ void loginSession(bool loggedInConfo, int UID)
                 if (count == numOfReminders)
                 {
                     reminderAppend = true; // in the instance that the set amount of reminders is met, exit the loop and go to burkina faso
-                    loginSession(loggedInConfo, UID) // return to login session to display updated reminders
+                    loginSession(loggedInConfo, UID); // return to login session to display updated reminders
                 }
             }
             else
             {
-                cout << "Reminder has failed to append to database \n" << sqlite_errcode(stmt); // display error code to explain failure (TESTING MEASURE)
+                cout << "Reminder has failed to append to database \n" << sqlite3_errcode(db); // display error code to explain failure (TESTING MEASURE)
             }
 
         }
 
     }
-}
 
     else if (choice == 2)
     {
@@ -151,7 +150,8 @@ void loginSession(bool loggedInConfo, int UID)
 
         exit(0);
     }
-    
+
+
     else 
     {
         cout << "Invalid input, try again";
@@ -161,7 +161,9 @@ void loginSession(bool loggedInConfo, int UID)
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 
-} 
+}
+
+
 
 
 bool isLoggedIn(int choice, int retryAttempts) {
