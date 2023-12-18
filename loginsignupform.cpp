@@ -70,13 +70,20 @@ void loginSession(bool loggedInConfo, int UID) {
 
         for (i = 0; numOfReminders; i++)
         {
+            rc = sqlite3_open("userdata.db", &db);
+
+            if (rc != SQLITE_OK)
+            {
+                cerr << "Error loading database\n"; // testing measures, will be removed once fully working
+                sqlite3_finalize(stmt);
+                sqlite3_close(db);
+            }
+
+            const char* addReminder = "INSERT INTO reminders (userReminders) VALUES (?);"; // prompt to add reminders to the reminders table
             string reminderInput;
-            cout << "Reminder no. " << i; // the value i will keep incrementing to indicate the number of reminder
+            cout << "Write the details of the given reminder" << "(No.) " << i; // the value i will keep incrementing to indicate the number of reminder
             cin >> reminderInput;
             
-            sqlite3_open("userdata.db", &db);
-
-            const char* addReminder = "SELECT reminder FROM reminderPrompt;";
 
             sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
