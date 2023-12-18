@@ -71,6 +71,18 @@ bool loginSession(bool loggedInConfo, int UID)
         int i;
         bool reminderAppend = false; // this will be used to ensure that numOfReminder has been satisfied
 
+        const char* addReminder = "INSERT INTO reminders (userReminders) VALUES (?)"; // prompt to add reminders to the reminders table
+        rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr); // ready the SQL statement
+
+        if (rc != SQLITE_OK)
+        {
+            cerr << "SQL statement initialization has failed!\n";
+        }
+        else 
+        {
+            cout << "SQL statement intialization success!\n"; // testing measures will be removed once fully working
+        }
+
         while (!reminderAppend)
         {
             for (i = 1; numOfReminders; i++)
@@ -80,18 +92,6 @@ bool loginSession(bool loggedInConfo, int UID)
 
                 rc = sqlite3_open("userdata.db", &db);
 
-                const char* addReminder = "INSERT INTO reminders (userReminders) VALUES (?)"; // prompt to add reminders to the reminders table
-                rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr); // ready the SQL statement
-
-                if (rc != SQLITE_OK)
-                {
-                    cerr << "SQL statement initialization has failed!\n";
-                }
-                else 
-                {
-                    cout << "SQL statement intialization success!\n"; // testing measures will be removed once fully working
-                }
-                
                 cout << "Write the details of the given reminder" << "(No. " << i << ")"; // the value i will keep incrementing to indicate the number of reminder
                 cin >> reminderInput;
 
@@ -105,7 +105,6 @@ bool loginSession(bool loggedInConfo, int UID)
                 {
                     cout << "Input bind successful!\n"; // testing measures 
                 }
-
 
                 int result = sqlite3_step(stmt);
 
