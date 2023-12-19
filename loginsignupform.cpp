@@ -66,13 +66,11 @@ bool loginSession(bool loggedInConfo, int UID)
 
     if (choice == 1)
     {
-        int numOfReminders;
-        cout << "No. of reminders?\n";
-        cin >> numOfReminders;
-        int i;
-        int count = 0; // comparsion integer
-        int user_id = UID + 1; // defining userid
+        int user_id = UID + 1; // defining user ID
+        string reminderInput;
 
+        cout << "How many reminders do you wish to add? \n"; // storing reminders
+        cin >> numOfReminders;
 
         cout << "Affirming userID before adding reminder: " << "(ID is " << UID << " )" << endl; // testing measures
 
@@ -81,89 +79,69 @@ bool loginSession(bool loggedInConfo, int UID)
         if (rc != SQLITE_OK)
         {
             cerr << "Error opening database\n";
-
+            return false;
         }
 
-        const char* addReminder = "INSERT INTO reminders (userReminders, userID) VALUES (?, ?)"; // prompt to add reminders to the reminders table
-        rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr); // ready the SQL statement
+        const char *addReminder = "INSERT INTO reminders (userReminders, userID) VALUES (?, ?)"; // prompt to add reminders to the reminders table
+        rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
 
         if (rc != SQLITE_OK)
         {
             cerr << "SQL statement initialization has failed!\n";
+            sqlite3_close(db);
+            return false;
         }
         else
         {
-            cout << "SQL statement intialization success!\n";
+            cout << "SQL statement initialization success!\n";
         }
 
 
-        for (int i = 0; i < numOfReminders; i++) 
+    for (int i = 0; i < numOfReminders; i++) 
+    {
+        cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
+        cin >> reminderInput;
+
+        rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_bind_int(stmt, 2, user_id);
+
+        if (rc != SQLITE_OK) 
         {
-            string reminderInput;
-        
-            cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
-            cin >> reminderInput;
-
-
-            rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
-
-            if (rc != SQLITE_OK) 
-            {
-                cerr << "Input bind fail!\n";
-                sqlite3_finalize(stmt);
-                sqlite3_close(db);
-                return false;
-            }
-            else
-            {
-                cout << "Reminder input bind success!\n"; // testing measures
-            }
-
-            rc = sqlite3_bind_int(stmt, 2, user_id);  // userID is the ID of the current logged-in user
-
-            if (rc != SQLITE_OK) 
-            {
-                cerr << "Input bind fail!\n";
-                sqlite3_finalize(stmt);
-                sqlite3_close(db);
-                return false;
-            }
-            else
-            {
-                cout << "User input bind success!\n";
-            }
-
-            int result = sqlite3_step(stmt);
-
-            if (result != SQLITE_DONE) 
-            {
-                cerr << "Reminder has failed to append to the database\n" << sqlite3_errcode(db) << endl;
-                sqlite3_finalize(stmt);
-                sqlite3_close(db);
-                return false;
-            }
-            else
-            {
-                cout << "Reminder has successfully appended to the database! \n";
-            }
-
-            rc = sqlite3_reset(stmt); // reset before iteration
-
-            if (rc != SQLITE_OK) 
-            {
-                cerr << "Error resetting statement \n" << sqlite3_errmsg(db);
-                sqlite3_finalize(stmt);
-                sqlite3_close(db);
-                return false;
-            }
+            cerr << "Input bind fail!" << endl;
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return false;
         }
 
-        // Finalize the statement after the loop
-        sqlite3_finalize(stmt);
+        int result = sqlite3_step(stmt);
 
-        sqlite3_close(db);
-        return true;
+        if (result != SQLITE_DONE) 
+        {
+            cerr << "Reminder has failed to append to the database: " << sqlite3_errcode(db) << endl;
+            // Handle the error and retry, if appropriate
+            sqlite3_reset(stmt);
+            continue;
+        } 
+
+        else 
+        {
+            cout << "Reminder has successfully appended to the database!" << endl;
+        }
+
+        // Reset the statement for the next iteration
+        rc = sqlite3_reset(stmt);
+        if (rc != SQLITE_OK) 
+        
+            cerr << "Error resetting statement" << endl;
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return false;
+        }
     }
+
+
+
+
 
     else if (choice == 2)
     {
@@ -188,7 +166,6 @@ bool loginSession(bool loggedInConfo, int UID)
 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
-
 }
 
 
