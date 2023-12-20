@@ -13,6 +13,124 @@ using namespace std;
 
 // void hashingAlgorithm() {} // for further encrypting the password
 
+void addRemindersToUserTable(int UID)
+{
+    string reminderInput;
+    int numOfReminders;
+    int rc; // return code for testing measures
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    
+
+    cout << "How many reminders do you wish to add? \n"; 
+    cin >> numOfReminders;
+
+    cout << "Affirming userID before adding reminder: " << "(ID is " << UID << " )" << endl; // testing measures (IDS ARE ZERO BASED)
+
+    rc = sqlite3_open("userdata.db", &db);
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Error opening database\n";
+        return false;
+    }
+
+    const char *addReminder = "INSERT INTO reminders (userReminders, userID) VALUES (?, ?)"; // prompt to add reminders to the reminders table
+    rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "SQL statement initialization has failed!\n";
+        sqlite3_close(db);
+        return false;
+    }
+    else
+    {
+        cout << "SQL statement initialization success!\n";
+    }
+
+
+    for (int i = 0; i < numOfReminders; i++) 
+    {
+        cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
+        cin >> reminderInput;
+
+        rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_bind_int(stmt, 2, UID);
+
+        if (rc != SQLITE_OK) 
+        {
+            cerr << "Input bind fail!" << endl;
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return false;
+        }
+
+        int result = sqlite3_step(stmt);
+
+        if (result != SQLITE_DONE) 
+        {
+            cerr << "Reminder has failed to append to the database: " << sqlite3_errcode(db) << endl;
+            // Handle the error and retry, if appropriate
+            sqlite3_reset(stmt);
+            continue;
+        } 
+
+        else 
+        {
+            cout << "Reminder has successfully appended to the database!" << endl;
+        }
+
+        // Reset the statement for the next iteration
+        rc = sqlite3_reset(stmt);
+        if (rc != SQLITE_OK) 
+        {
+            cerr << "Error resetting statement" << endl;
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return false;
+        }
+    }
+}
+    
+
+void loadingUserReminders() 
+{
+    while (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        cout << "Current reminder: " << reminder << endl;
+    }
+    sqlite3_finalize(stmt);
+}
+
+
+string getReminderTableName(int UID)
+{
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    sqlite3_open("userdata.db", &db);
+
+    const char* query = "SELECT individualReminder FROM userReminders_" + to_string(UID);
+    sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+
+    int result = sqlite3_step(stmt);
+
+    if (result != SQLITE_OK)
+    {
+        cerr << "Issue loading users table\n";
+        return "";
+    }
+    else
+    {
+        cout << "Successfully loaded users table!\n";
+        loadingUserReminders(stmt); // function call to load the given reminders
+        return "Table Loaded!\n";
+    }
+
+}
+
 
 bool loginSession(bool loggedInConfo, int UID) 
 { 
@@ -25,79 +143,10 @@ bool loginSession(bool loggedInConfo, int UID)
 
     cout << "Welcome to my reminders\n";
 
-    string getReminderTableName(int UID)
-    {
-        sqlite3_open("userdata.db", &db);
 
-        const char* query = "SELECT uniqueReminderID FROM userReminders_" + to_string(UID); // retrieve the user reminders table 
-        sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+    string result = getReminderTableName(UID);
 
-        int result = sqlite3_step(stmt);
-
-        if (result != SQLITE_OK)
-        {
-            cerr << "Issue loading users table\n";
-        }
-        else
-        {
-            cout << "Successfully loaded users table! \n";
-        }
-
-    }
-
-    void reminderTableGeneration(int UID) // a unique table will be constructed for the user to add their own reminders
-    {
-        sqlite3_open("userdata.db", &db);
-
-        const char* createRemindersTable = ("CREATE TABLE" + remindersTableName + " ("
-        "uniqueReminderID INTEGER PRIMARY KEY NOT NULL,"
-        "individualReminder TEXT)"
-        ).c_str(); // will create a unique table for the user after logging in (assuming that they don't already have one created)
-
-
-        int rc = sqlite3_prepare_v2(db, createRemindersTable, -1, &stmt, nullptr);
-
-        if (rc != SQLITE_OK)
-        {
-            cerr << "Error preparing reminder table query \n";
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
-        }
-        else
-        {
-            cout << "Preparation has been successful!\n";
-        }
-
-        int result = sqlite3_step(stmt);
-
-        if (result != SQLITE_DONE)
-        {
-            cerr << "Failed to generate the user table \n";
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
-        }
-        else
-        {
-            cout << "Successfully generated the user table! \n";
-        }
-
-    }
-
-
-    loadingUserReminders(); // function call to load the given reminders
-
-
-    void loadingUserReminders() 
-    {
-        while (sqlite3_step(stmt) == SQLITE_ROW)
-        {
-            const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-            cout << "Current reminder: " << reminder << endl;
-        }
-    }
-
-
-    cout << "Options \n" << endl;
+    cout << "Options \n";
     cout << endl;
     cout << "1. Add reminders\n";
     cout << "2. Log out \n";
@@ -107,84 +156,7 @@ bool loginSession(bool loggedInConfo, int UID)
     if (choice == 1)
     {
         addRemindersToUserTable(UID); // function call will send the given argument UID to allow for user to add reminders to their table
-
-        void addRemindersToUserTable(int UID)
-        {
-            string reminderInput;
-            int numOfReminders;
-
-            cout << "How many reminders do you wish to add? \n"; // storing reminders
-            cin >> numOfReminders;
-
-            cout << "Affirming userID before adding reminder: " << "(ID is " << UID << " )" << endl; // testing measures (IDS ARE ZERO BASED)
-
-            rc = sqlite3_open("userdata.db", &db);
-
-            if (rc != SQLITE_OK)
-            {
-                cerr << "Error opening database\n";
-                return false;
-            }
-
-            const char *addReminder = "INSERT INTO reminders (userReminders, userID) VALUES (?, ?)"; // prompt to add reminders to the reminders table
-            rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
-
-            if (rc != SQLITE_OK)
-            {
-                cerr << "SQL statement initialization has failed!\n";
-                sqlite3_close(db);
-                return false;
-            }
-            else
-            {
-                cout << "SQL statement initialization success!\n";
-            }
-
-
-            for (int i = 0; i < numOfReminders; i++) 
-            {
-                cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
-                cin >> reminderInput;
-
-                rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
-                rc = sqlite3_bind_int(stmt, 2, UID);
-
-                if (rc != SQLITE_OK) 
-                {
-                    cerr << "Input bind fail!" << endl;
-                    sqlite3_finalize(stmt);
-                    sqlite3_close(db);
-                    return false;
-                }
-
-                int result = sqlite3_step(stmt);
-
-                if (result != SQLITE_DONE) 
-                {
-                    cerr << "Reminder has failed to append to the database: " << sqlite3_errcode(db) << endl;
-                    // Handle the error and retry, if appropriate
-                    sqlite3_reset(stmt);
-                    continue;
-                } 
-
-                else 
-                {
-                    cout << "Reminder has successfully appended to the database!" << endl;
-                }
-
-                // Reset the statement for the next iteration
-                rc = sqlite3_reset(stmt);
-                if (rc != SQLITE_OK) 
-                {
-                    cerr << "Error resetting statement" << endl;
-                    sqlite3_finalize(stmt);
-                    sqlite3_close(db);
-                    return false;
-                }
-            }
-        }
     }
-
 
     else if (choice == 2)
     {
@@ -406,7 +378,8 @@ bool signUp(int choice, int retryAttempts)
             {
                 sqlite3_open("userdata.db", &db);
 
-                const char* createRemindersTable = ("CREATE TABLE" + remindersTableName + " ("
+                const char* createRemindersTable = 
+                ("CREATE TABLE" + remindersTableName + " ("
                 "uniqueReminderID INTEGER PRIMARY KEY NOT NULL,"
                 "individualReminder TEXT)"
                 ).c_str()
