@@ -14,6 +14,11 @@ using namespace std;
 // void hashingAlgorithm() {} // for further encrypting the password
 
 
+
+
+
+
+
 bool loginSession(bool loggedInConfo, int UID) 
 { 
     sqlite3* db;
@@ -21,11 +26,33 @@ bool loginSession(bool loggedInConfo, int UID)
     sqlite3_stmt* stmt;
     int choice;
 
+
     sqlite3_open("userdata.db", &db); 
+
+    string remidersTableName = getRemindersTableName(UID)
+
+    void generateRemindersTableName(int UID)
+    {
+        return "userReminders_" to_string(userID); // will cocatenate the table name with the userID to prevent data integrity issues
+    }   
+
+
+    void reminderTableGeneration(int UID, rc, sqlite3* db, sqlite3_stmt* stmt) // a unique table will be constructed for the user to add their own reminders
+    {
+        const char* createRemindersTable = ("CREATE TABLE" + remindersTableName + " ("
+        "uniqueReminderID INTEGER PRIMARY KEY NOT NULL,"
+        "individualReminder TEXT)"
+        ).c_str()
+        
+        // will create a unique table for the user after logging in
+
+        rc = sqlite3_prepare_v2(db, createRemindersTable, -1, &stmt, nullptr);
+
+    }
+
 
     cout << "Welcome to my reminders\n";
 
-    const char* query = "SELECT userReminders FROM reminders WHERE userID = ?";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
@@ -138,9 +165,6 @@ bool loginSession(bool loggedInConfo, int UID)
             }
         }
     }
-
-
-
 
 
     else if (choice == 2)
