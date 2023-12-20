@@ -13,6 +13,13 @@ using namespace std;
 
 // void hashingAlgorithm() {} // for further encrypting the password
 
+
+bool isValidTableName(string tableName) // will validate the table name to prevent SQL injections
+{
+
+
+}
+
 bool addRemindersToUserTable(int UID)
 {
     string reminderInput;
@@ -35,7 +42,9 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
-    const char *addReminder = "INSERT INTO reminders (userReminders, userID) VALUES (?, ?)"; // prompt to add reminders to the reminders table
+    string tableName = "userReminders_" + to_string(UID);
+    isValidTableName(tableName);
+
     rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
 
     if (rc != SQLITE_OK)
@@ -56,7 +65,6 @@ bool addRemindersToUserTable(int UID)
         cin >> reminderInput;
 
         rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
-        rc = sqlite3_bind_int(stmt, 2, UID);
 
         if (rc != SQLITE_OK) 
         {
@@ -75,7 +83,6 @@ bool addRemindersToUserTable(int UID)
             sqlite3_reset(stmt);
             continue;
         } 
-
         else 
         {
             cout << "Reminder has successfully appended to the database!" << endl;
@@ -94,19 +101,48 @@ bool addRemindersToUserTable(int UID)
 }
     
 
-void loadingUserReminders() 
+void loadingUserReminders(int UID) 
 {
     sqlite3* db;
     sqlite3_stmt* stmt;
 
-    // add the sqlite3_open which will open a specific table in the db based on the users ID 
+    int rc = sqlite3_open("userdata.db", &db);
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Error opening database\n";
+        return;
+    }
+
+    const char* query = "SELECT individualReminder FROM userReminders WHERE userID = ?";
+
+    rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Error preparing statement\n";
+        sqlite3_close(db);
+        return;
+    }
+
+    rc = sqlite3_bind_int(stmt, 1, UID);
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Error binding parameter\n";
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return;
+    }
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
         const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         cout << "Current reminder: " << reminder << endl;
     }
+
     sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
 
 
@@ -117,8 +153,6 @@ string getReminderTableName(int UID)
 
     sqlite3_open("userdata.db", &db);
 
-    sqlite3_open("userReminders_" + to_string(UID), &db)
-
     const char* query = "SELECT individualReminder FROM userReminders_" + to_string(UID);
     sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
@@ -127,15 +161,15 @@ string getReminderTableName(int UID)
     if (result != SQLITE_OK)
     {
         cerr << "Issue loading users table\n";
-        return "";
+        return ""; // or some default value indicating an issue
     }
     else
     {
         cout << "Successfully loaded users table!\n";
         loadingUserReminders(stmt); // function call to load the given reminders
-        return "Table Loaded!\n";
+        // return the table name here if needed
+        return "userReminders_" + to_string(UID);
     }
-
 }
 
 
@@ -162,7 +196,6 @@ bool loginSession(bool loggedInConfo, int UID)
 
     if (choice == 1)
     {
-        getReminderTableName(UID);
         addRemindersToUserTable(UID); // function call will send the given argument UID to allow for user to add reminders to their table
     }
 
@@ -305,17 +338,21 @@ void reminderTableGeneration(int UID) // table will be generated for a new user
 
     sqlite3_open("userdata.db", &db);
 
-    const char* createRemindersTable = ("CREATE TABLE" + remindersTableName + " ("
-    "uniqueReminderID INTEGER PRIMARY KEY AUTOINCREMENT,"
-    "individualReminder TEXT)").c_str();
+    const char* createRemindersTable = R"(
+        CREATE TABLE userReminders (
+            uniqueReminderID INTEGER PRIMARY KEY NOT NULL,
+            individualReminder TEXT,
+            userID INTEGER,
+            FOREIGN KEY (userID) REFERENCES users(userID)
+        );
+    )";
     
-    rc = sqlite3_prepare_v2(db, createRemindersTable, -1, &stmt, nullptr);
+    rc = sqlite3_exec(db, createRemindersTable, nullptr, nullptr, nullptr);
 
-    int result = sqlite3_step(stmt);
 
-    if (result != SQLITE_DONE)
+    if (result != SQLITE_OK)
     {
-        cerr << "Issue generating table\n" << sqlite3_errcode(db);
+        cerr << "Issue generating table\n" << sqlite3_errmsg(db);
         sqlite3_finalize(stmt);
         sqlite3_close(db);
     }
