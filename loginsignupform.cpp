@@ -13,7 +13,7 @@ using namespace std;
 
 // void hashingAlgorithm() {} // for further encrypting the password
 
-void addRemindersToUserTable(int UID)
+bool addRemindersToUserTable(int UID)
 {
     string reminderInput;
     int numOfReminders;
@@ -96,6 +96,11 @@ void addRemindersToUserTable(int UID)
 
 void loadingUserReminders() 
 {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    // add the sqlite3_open which will open a specific table in the db based on the users ID 
+
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
         const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
@@ -111,6 +116,8 @@ string getReminderTableName(int UID)
     sqlite3_stmt* stmt;
 
     sqlite3_open("userdata.db", &db);
+
+    sqlite3_open("userReminders_" + to_string(UID), &db)
 
     const char* query = "SELECT individualReminder FROM userReminders_" + to_string(UID);
     sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
@@ -155,6 +162,7 @@ bool loginSession(bool loggedInConfo, int UID)
 
     if (choice == 1)
     {
+        getReminderTableName(UID);
         addRemindersToUserTable(UID); // function call will send the given argument UID to allow for user to add reminders to their table
     }
 
@@ -207,7 +215,8 @@ bool isLoggedIn(int choice, int retryAttempts) {
     }
  
 
-    while (!loggedInConfo) {
+    while (!loggedInConfo) 
+    {
         cout << "Enter your username:\n";
         cin >> un;
 
@@ -281,7 +290,8 @@ bool isLoggedIn(int choice, int retryAttempts) {
 }
 
 
-string generateRemindersTableName(int UID);
+
+string generateRemindersTableName(int UID)
 {
     return "userReminders_" + to_string(UID); // will concatenate the table name with the userID to prevent data integrity issues
 }   
@@ -289,23 +299,30 @@ string generateRemindersTableName(int UID);
 
 void reminderTableGeneration(int UID) // table will be generated for a new user
 {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    int rc;
+
     sqlite3_open("userdata.db", &db);
 
-    const char* createRemindersTable = 
-    ("CREATE TABLE" + remindersTableName + " ("
-    "uniqueReminderID INTEGER PRIMARY KEY NOT NULL,"
-    "individualReminder TEXT)"
-    ).c_str()
+    const char* createRemindersTable = ("CREATE TABLE" + remindersTableName + " ("
+    "uniqueReminderID INTEGER PRIMARY KEY AUTOINCREMENT,"
+    "individualReminder TEXT)").c_str();
     
-    // will create a unique table for the user after logging in
-
     rc = sqlite3_prepare_v2(db, createRemindersTable, -1, &stmt, nullptr);
 
-    result = sqlite3_step(stmt);
+    int result = sqlite3_step(stmt);
 
-
-    signUpSuccess = true;
-
+    if (result != SQLITE_DONE)
+    {
+        cerr << "Issue generating table\n" << sqlite3_errcode(db);
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+    }
+    else
+    {
+        cout << "Successfully generated table!\n";
+    }
 }
 
 
@@ -320,7 +337,7 @@ bool signUp(int choice, int retryAttempts)
     rc = sqlite3_open("userdata.db", &db);
 
     const char* sql = "INSERT INTO users (username, password) VALUES (?, ?)";
-    ;rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
 
     if (rc != SQLITE_OK)
     {
@@ -391,7 +408,11 @@ bool signUp(int choice, int retryAttempts)
         else 
         {
             cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append
-            string remidersTableName = getRemindersTableName(UID); // function call will send the argument UID to convert it into a string for given user
+
+            // code below will generate the 'reminders' table for each individual user after they've been inserted into the 'users' table
+            int UID = sqlite3_last_insert_rowid(db);
+            string remidersTableName = generateRemindersTableName(UID); // function call that will ensure that all titles of the reminders tables are unique
+            reminderTableGeneration() // function call that will generate a unique reminders table for the user
             signUpSuccess = true;
         }
     sqlite3_finalize(stmt);
