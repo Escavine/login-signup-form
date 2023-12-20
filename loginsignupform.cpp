@@ -37,8 +37,10 @@ bool loginSession(bool loggedInConfo, int UID)
     }   
 
 
-    void reminderTableGeneration(int UID, rc, sqlite3* db, sqlite3_stmt* stmt) // a unique table will be constructed for the user to add their own reminders
+    void reminderTableGeneration(int UID) // a unique table will be constructed for the user to add their own reminders
     {
+        sqlite3* db;
+        sqlite3_stmt* stmt;
         const char* createRemindersTable = ("CREATE TABLE" + remindersTableName + " ("
         "uniqueReminderID INTEGER PRIMARY KEY NOT NULL,"
         "individualReminder TEXT)"
@@ -50,36 +52,16 @@ bool loginSession(bool loggedInConfo, int UID)
 
     }
 
-
     cout << "Welcome to my reminders\n";
 
 
-    rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
-
-    if (rc != SQLITE_OK)
+    void loadingUserReminders() 
     {
-        cout << "List has failed to load\n";
-        sqlite3_finalize(stmt);
-        sqlite3_close(db); // in the instance that user has failed to load, then the database will close
-        exit(0);
-    }
-
-    rc = sqlite3_bind_int(stmt, 1, UID); // column for reminders
-
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Cannot find reminders \n";
-    }
-    else 
-    {
-        cout << "Reminders have been found \n";
-    }
-
-
-    while (sqlite3_step(stmt) == SQLITE_ROW)
-    {
-        const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-        cout << "Current reminder: " << reminder << endl;
+        while (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+            const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            cout << "Current reminder: " << reminder << endl;
+        }
     }
 
 
