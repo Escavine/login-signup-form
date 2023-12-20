@@ -20,7 +20,7 @@ void addRemindersToUserTable(int UID)
     int rc; // return code for testing measures
     sqlite3* db;
     sqlite3_stmt* stmt;
-    
+
 
     cout << "How many reminders do you wish to add? \n"; 
     cin >> numOfReminders;
@@ -281,6 +281,34 @@ bool isLoggedIn(int choice, int retryAttempts) {
 }
 
 
+string generateRemindersTableName(int UID);
+{
+    return "userReminders_" + to_string(UID); // will concatenate the table name with the userID to prevent data integrity issues
+}   
+
+
+void reminderTableGeneration(int UID) // table will be generated for a new user
+{
+    sqlite3_open("userdata.db", &db);
+
+    const char* createRemindersTable = 
+    ("CREATE TABLE" + remindersTableName + " ("
+    "uniqueReminderID INTEGER PRIMARY KEY NOT NULL,"
+    "individualReminder TEXT)"
+    ).c_str()
+    
+    // will create a unique table for the user after logging in
+
+    rc = sqlite3_prepare_v2(db, createRemindersTable, -1, &stmt, nullptr);
+
+    result = sqlite3_step(stmt);
+
+
+    signUpSuccess = true;
+
+}
+
+
 bool signUp(int choice, int retryAttempts) 
 {
     string un, pw;
@@ -363,34 +391,8 @@ bool signUp(int choice, int retryAttempts)
         else 
         {
             cout << "Sign up has been successfully initiated! " << endl; // in the instance that it is a success, then it will be outputted, or otherwise it has failed to append
+            string remidersTableName = getRemindersTableName(UID); // function call will send the argument UID to convert it into a string for given user
             signUpSuccess = true;
-
-            string remidersTableName = getRemindersTableName(UID);
-
-            generateRemindersTableName(UID); // function call will send the argument UID to convert it into a string for given user
-
-            string generateRemindersTableName(int UID);
-            {
-                return "userReminders_" + to_string(UID); // will cocatenate the table name with the userID to prevent data integrity issues
-            }   
-
-            void reminderTableGeneration(int UID) // table will be generated for a new user
-            {
-                sqlite3_open("userdata.db", &db);
-
-                const char* createRemindersTable = 
-                ("CREATE TABLE" + remindersTableName + " ("
-                "uniqueReminderID INTEGER PRIMARY KEY NOT NULL,"
-                "individualReminder TEXT)"
-                ).c_str()
-                
-                // will create a unique table for the user after logging in
-
-                rc = sqlite3_prepare_v2(db, createRemindersTable, -1, &stmt, nullptr);
-
-                sqlite3_step(stmt);
-
-            }
         }
     sqlite3_finalize(stmt);
     sqlite3_close(db);
