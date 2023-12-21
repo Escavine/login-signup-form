@@ -340,7 +340,7 @@ void reminderTableGeneration(int UID) // table will be generated for a new user
 
     const char* createRemindersTable = R"(
         CREATE TABLE userReminders (
-            uniqueReminderID INTEGER PRIMARY KEY NOT NULL,
+            uniqueReminderID INTEGER PRIMARY KEY AUTOINCREMENT,
             individualReminder TEXT,
             userID INTEGER,
             FOREIGN KEY (userID) REFERENCES users(userID)
@@ -350,7 +350,7 @@ void reminderTableGeneration(int UID) // table will be generated for a new user
     rc = sqlite3_exec(db, createRemindersTable, nullptr, nullptr, nullptr);
 
 
-    if (result != SQLITE_OK)
+    if (rc != SQLITE_OK)
     {
         cerr << "Issue generating table\n" << sqlite3_errmsg(db);
         sqlite3_finalize(stmt);
