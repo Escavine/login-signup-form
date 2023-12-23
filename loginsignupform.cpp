@@ -173,7 +173,7 @@ string getReminderTableName(int UID)
 }
 
 
-bool loginSession(bool loggedInConfo, int UID) 
+bool loginSession(bool loggedInConfo, int UID, string personalName, string personalSurname) 
 { 
     sqlite3* db;
     int rc;
@@ -295,10 +295,13 @@ bool isLoggedIn(int choice, int retryAttempts) {
         if (result == SQLITE_ROW)
         {
             int UID = sqlite3_column_int(stmt, 0); // this will figure out userID of person
+            string personalName = sqlite3_column_text(stmt, 3); // will find the name of the individual
+            string personalSurname = sqlite3_column_text(stmt, 4); // will find the surname of the individual
             cout << "User ID: " << UID << endl;
-            cout << "User authenticated.\n" << endl;
+            cout << "User authenticated. " << endl;
+            cout << "Welcome " << personalName << personalSurname << endl; // testing measure 
             loggedInConfo = true;
-            loginSession(loggedInConfo, UID);
+            loginSession(loggedInConfo, UID, personalName, personalSurname);
         }
         else 
         {
@@ -340,7 +343,7 @@ void reminderTableGeneration(int UID) // table will be generated for a new user
 
     const char* createRemindersTable = R"(
         CREATE TABLE userReminders (
-            uniqueReminderID INTEGER PRIMARY KEY AUTOINCREMENT,
+            uniqueReminderID INTEGER PRIMARY KEY NOT NULL,
             individualReminder TEXT,
             userID INTEGER,
             FOREIGN KEY (userID) REFERENCES users(userID)
@@ -350,7 +353,7 @@ void reminderTableGeneration(int UID) // table will be generated for a new user
     rc = sqlite3_exec(db, createRemindersTable, nullptr, nullptr, nullptr);
 
 
-    if (rc != SQLITE_OK)
+    if (result != SQLITE_OK)
     {
         cerr << "Issue generating table\n" << sqlite3_errmsg(db);
         sqlite3_finalize(stmt);
@@ -365,15 +368,15 @@ void reminderTableGeneration(int UID) // table will be generated for a new user
 
 bool signUp(int choice, int retryAttempts) 
 {
-    string un, pw;
-    bool signUpSuccess = false; // local variables
+    string un, pw, personalName, personalSurname;
+    bool signUpSuccess = false; 
     sqlite3_stmt* stmt;
     int rc;
     sqlite3* db;
 
     rc = sqlite3_open("userdata.db", &db);
 
-    const char* sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+    const char* sql = "INSERT INTO users (username, password, individualName, individualSurname) VALUES (?, ?, ?, ?)";
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr); 
 
     if (rc != SQLITE_OK)
@@ -391,8 +394,14 @@ bool signUp(int choice, int retryAttempts)
         cout << "Enter a new username:\n ";
         cin >> un;
     
-        cout << "Enter a new password:\n "; 
+        cout << "Enter a new password:\n "; // FUTURE REFERENCE: ENSURE THAT PASSWORD ALLOWS FOR 6/8 CHARACTERS, 1 CAPITAL LETTER AND A SPECIAL CHARACTER
         cin >> pw;
+
+        cout << "What is your name?";
+        cin >> personalName;
+
+        cout << "What is your surname?";
+        cin >> personalSurname;
     
         cout << "Signing up... \n";
 
@@ -424,6 +433,35 @@ bool signUp(int choice, int retryAttempts)
         {
             cout << "Sucessfully binded password\n" << endl;
         }
+
+        rc = sqlite3_bind_text(stmt, 3, personalName.c_str(), -1, SQLITE_STATIC);
+
+        if (rc != SQLITE_OK)
+        { 
+            cerr << "Error binding name\n" << endl;
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            break;
+        }
+        else 
+        {
+            cout << "Sucessfully binded name\n" << endl;
+        }
+
+        rc = sqlite3_bind_text(stmt, 4, personalSurname.c_str(), -1, SQLITE_STATIC);
+
+        if (rc != SQLITE_OK)
+        { 
+            cerr << "Error binding surname\n" << endl;
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            break;
+        }
+        else 
+        {
+            cout << "Sucessfully binded surname\n" << endl;
+        }
+
 
         int result = sqlite3_step(stmt); // insert the new user to the database once compilation is completed
 
