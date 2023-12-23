@@ -14,9 +14,28 @@ using namespace std;
 // void hashingAlgorithm() {} // for further encrypting the password
 
 
-bool isValidTableName(string tableName) // will validate the table name to prevent SQL injections
+bool isValidTableName(const std::string& tableName) // will validate the table name to prevent SQL injections
 {
+    if (tableName.empty())
+    {
+        return false
+    }
 
+    if (!isalpha(tableName[0])) // checks if first letter is an alphabet
+    {
+        return false;
+    }
+
+    for (char c : tableName) // checks each character of table name
+    {
+        // allows alphanumeric characters and underscores
+        if (std::!isalnum(c) && c != '_')
+        {
+            return false;
+        }
+    }
+
+    return true; // if name is valid, then return true
 
 }
 
@@ -43,7 +62,16 @@ bool addRemindersToUserTable(int UID)
     }
 
     string tableName = "userReminders_" + to_string(UID);
-    isValidTableName(tableName);
+    isValidTableName(tableName); // will ensure that the given table has a valid format 
+
+    if (isValidTableName(tableName))
+    {
+        cout << "Valid table name" << endl;
+    }
+    else
+    {
+        cout << "Invalid table name" << endl;
+    }
 
     rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
 
