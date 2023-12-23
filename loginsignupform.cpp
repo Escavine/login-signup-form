@@ -6,6 +6,7 @@
 #include <string>  
 #include <sqlite3.h> // header library for SQL command utilisation
 #include <stdlib.h> // standard library 
+#include <sstream>
 
 
 using namespace std;
@@ -14,11 +15,11 @@ using namespace std;
 // void hashingAlgorithm() {} // for further encrypting the password
 
 
-bool isValidTableName(const std::string& tableName) // will validate the table name to prevent SQL injections
+bool isValidTableName(const string tableName) // will validate the table name to prevent SQL injections
 {
     if (tableName.empty())
     {
-        return false
+        return false;
     }
 
     if (!isalpha(tableName[0])) // checks if first letter is an alphabet
@@ -26,10 +27,10 @@ bool isValidTableName(const std::string& tableName) // will validate the table n
         return false;
     }
 
-    for (char c : tableName) // checks each character of table name
+    for (char c; tableName) // checks each character of table name
     {
         // allows alphanumeric characters and underscores
-        if (std::!isalnum(c) && c != '_')
+        if (!isalnum(c) && c != '_') 
         {
             return false;
         }
@@ -62,7 +63,7 @@ bool addRemindersToUserTable(int UID)
     }
 
     string tableName = "userReminders_" + to_string(UID);
-    isValidTableName(tableName); // will ensure that the given table has a valid format 
+    isValidTableName(tableName); // will ensure that the given table is in valid format 
 
     if (isValidTableName(tableName))
     {
@@ -72,6 +73,8 @@ bool addRemindersToUserTable(int UID)
     {
         cout << "Invalid table name" << endl;
     }
+
+    const char* addReminder = ("INSERT INTO userReminders_" + to_string(UID) + " (individualReminder) VALUES (?)").c_str();
 
     rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
 
@@ -142,7 +145,12 @@ void loadingUserReminders(int UID)
         return;
     }
 
-    const char* query = "SELECT individualReminder FROM userReminders WHERE userID = ?";
+    ostringstream queryStream;
+
+
+    const char* query = "SELECT individualReminder FROM userReminders_" + UID + "WHERE userID = ?";
+    const std::string query = queryStream.str();
+    const char* charQuery = query.c_str();
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
 
@@ -165,7 +173,7 @@ void loadingUserReminders(int UID)
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
-        const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
         cout << "Current reminder: " << reminder << endl;
     }
 
@@ -178,11 +186,17 @@ string getReminderTableName(int UID)
 {
     sqlite3* db;
     sqlite3_stmt* stmt;
+    ostringstream queryStream;
 
     sqlite3_open("userdata.db", &db);
 
-    const char* query = "SELECT individualReminder FROM userReminders_" + to_string(UID);
-    sqlite3_prepare_v2(db, query, -1, &stmt, nullptr);
+
+
+    queryStream = "SELECT individualReminder FROM userReminders_" << UID;
+    const std::string query = queryStream.str();
+    const char* charQuery = query.c_str();
+
+    sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);
 
     int result = sqlite3_step(stmt);
 
@@ -210,10 +224,11 @@ bool loginSession(bool loggedInConfo, int UID, string personalName, string perso
 
     sqlite3_open("userdata.db", &db); // open the database
 
-    cout << "Welcome to my reminders\n";
+    cout << "Welcome " << personalName << " " << personalSurname << "to My Reminders! " << endl;
 
 
     string result = getReminderTableName(UID);
+
 
     cout << "Options \n";
     cout << endl;
@@ -361,7 +376,7 @@ string generateRemindersTableName(int UID)
 }   
 
 
-void reminderTableGeneration(int UID) // table will be generated for a new user
+void reminderTableGeneration(int UID, string remindersTableName) // table will be generated for a new user
 {
     sqlite3* db;
     sqlite3_stmt* stmt;
@@ -370,18 +385,19 @@ void reminderTableGeneration(int UID) // table will be generated for a new user
     sqlite3_open("userdata.db", &db);
 
     const char* createRemindersTable = R"(
-        CREATE TABLE userReminders (
+        CREATE TABLE )" + remindersTableName + R"(
+        )
             uniqueReminderID INTEGER PRIMARY KEY NOT NULL,
             individualReminder TEXT,
             userID INTEGER,
             FOREIGN KEY (userID) REFERENCES users(userID)
-        );
+        )
     )";
     
     rc = sqlite3_exec(db, createRemindersTable, nullptr, nullptr, nullptr);
 
 
-    if (result != SQLITE_OK)
+    if (rc != SQLITE_OK)
     {
         cerr << "Issue generating table\n" << sqlite3_errmsg(db);
         sqlite3_finalize(stmt);
@@ -514,8 +530,8 @@ bool signUp(int choice, int retryAttempts)
 
             // code below will generate the 'reminders' table for each individual user after they've been inserted into the 'users' table
             int UID = sqlite3_last_insert_rowid(db);
-            string remidersTableName = generateRemindersTableName(UID); // function call that will ensure that all titles of the reminders tables are unique
-            reminderTableGeneration() // function call that will generate a unique reminders table for the user
+            string remindersTableName = generateRemindersTableName(UID); // function call that will ensure that all titles of the reminders tables are unique
+            reminderTableGeneration(UID, remindersTableName); // function call that will generate a unique reminders table for the user
             signUpSuccess = true;
         }
     sqlite3_finalize(stmt);
