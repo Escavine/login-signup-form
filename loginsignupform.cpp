@@ -222,7 +222,7 @@ bool loginSession(bool loggedInConfo, int UID, string personalName, string perso
 
     sqlite3_open("userdata.db", &db); // open the database
 
-    cout << "Welcome " << personalName << " " << personalSurname << "to My Reminders! " << endl;
+    cout << "My Reminders App\n";
 
 
     string result = getReminderTableName(UID);
@@ -339,8 +339,8 @@ bool isLoggedIn(int choice, int retryAttempts) {
             string personalName = (const char*)sqlite3_column_text(stmt, 3); // will find the name of the individual
             string personalSurname = (const char*)sqlite3_column_text(stmt, 4); // will find the surname of the individual
             cout << "User ID: " << UID << endl;
-            cout << "User authenticated. " << endl;
-            cout << "Welcome " << personalName << personalSurname << endl; // testing measure 
+            cout << "User authenticated.\n" << endl;
+            cout << "Welcome " << personalName << " " << personalSurname << endl; // testing measure 
             loggedInConfo = true;
             loginSession(loggedInConfo, UID, personalName, personalSurname);
         }
@@ -393,6 +393,14 @@ void reminderTableGeneration(int UID, string remindersTableName) // table will b
 
     const char* query = createRemindersTable.c_str(); // convert to string
     
+    cout << "Query: " << createRemindersTable.c_str() << endl; // ensuring output is correct
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Issue generating table\n" << sqlite3_errmsg(db) << endl;
+    }
+
+
     rc = sqlite3_exec(db, query, nullptr, nullptr, nullptr);
 
 
@@ -405,6 +413,7 @@ void reminderTableGeneration(int UID, string remindersTableName) // table will b
         cout << "Successfully generated table!\n";
     }
     sqlite3_close(db);
+
 }
 
 
@@ -439,10 +448,10 @@ bool signUp(int choice, int retryAttempts)
         cout << "Enter a new password:\n "; // FUTURE REFERENCE: ENSURE THAT PASSWORD ALLOWS FOR 6/8 CHARACTERS, 1 CAPITAL LETTER AND A SPECIAL CHARACTER
         cin >> pw;
 
-        cout << "What is your name?";
+        cout << "What is your name?\n";
         cin >> personalName;
 
-        cout << "What is your surname?";
+        cout << "What is your surname?\n";
         cin >> personalSurname;
     
         cout << "Signing up... \n";
@@ -532,13 +541,45 @@ bool signUp(int choice, int retryAttempts)
             reminderTableGeneration(UID, remindersTableName); // function call that will generate a unique reminders table for the user
             signUpSuccess = true;
         }
+
+        bool relogin = false;
+        do {
+            cout << "Reminder System Main Menu\n" << endl;
+            cout << endl;
+            cout << "------- Main Menu -------\n";
+            
+            
+            cout << "1. Sign up\n";
+            cout << "2. Login\n";    
+            cin >> choice;
+            
+            
+            if (choice == 1)
+            {
+                cout << "You will be redirected to the sign-up form... " << endl;
+                bool signUpProcess = signUp(choice, retryAttempts);
+                relogin = true;
+            }
+            else if (choice == 2)
+            {
+                cout << "You will be redirected to the login form... " << endl;
+                bool loginResult = isLoggedIn(choice, retryAttempts);
+                relogin = true;
+            }
+            else
+            {
+                cerr << "Input not recognized, please use a sensible input" << endl;
+            }
+    
+          } while (relogin = false);
+
+    }
+            
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 
-    }
     return signUpSuccess; // confirms output, other measures will be made to ensure that the passwords are secure (i.e. encryption techniques such as a hash salt)    
 }
-
 
 
 void choiceFunction()
