@@ -495,62 +495,62 @@ bool signUp(int choice, int retryAttempts)
 }
 
 
+
 void clearInputBuffer()
 {
     cin.clear(); // clears error flags
     cin.ignore(numeric_limits<streamsize>::max(), '\n'); // disards characters until a new line is created
 }
 
-void choiceFunction(int retryAttempts)
-{
+
+void choiceFunction(int retryAttempts) {
     int choice;
     bool acceptableInput = false;
-    
+
     cout << "Reminder System Main Menu\n" << endl;
-    cout << endl;
     cout << "------- Main Menu -------\n";
-    
-    
+
     cout << "1. Sign up\n";
-    cout << "2. Login\n";    
+    cout << "2. Login\n";
     cin >> choice;
 
-    if (cin.fail()) // prevents incorrect data type being input
+    if (cin.fail()) 
     {
         cerr << "Invalid input, please try again\n" << endl;
         clearInputBuffer();
         choiceFunction(retryAttempts);
         return;
     }
-    
-    if (choice == 1)
+
+    if (choice == 1) 
     {
         cout << "You will be redirected to the sign-up form... " << endl;
         acceptableInput = true;
         bool signUpProcess = signUp(choice, retryAttempts);
-    }
-    else if (choice == 2)
+    } 
+    else if (choice == 2) 
     {
         cout << "You will be redirected to the login form... " << endl;
         acceptableInput = true;
         bool loginResult = isLoggedIn(choice, retryAttempts);
-    }
-    else
+    } 
+    else 
     {
-        if (!acceptableInput)
+        if (choice > 2 || choice < 0)
         {
-            cout << "Input not recognized, please use a sensible input " << endl;
-            clearInputBuffer(); 
-            choiceFunction(retryAttempts - 1); // keep recusing till right input is made 
+            cerr << "Invalid input, please try again\n" << endl;
+            clearInputBuffer();
+            choiceFunction(retryAttempts - 1);
             return;
-        }
-        else
+        } 
+        else if (retryAttempts == 0)
         {
             cerr << "Too many incorrect attempts, program will now terminate... " << endl;
             exit(0);
         }
     }
 }
+   
 
 
 int main()
