@@ -14,32 +14,6 @@ using namespace std;
 
 // void hashingAlgorithm() {} // for further encrypting the password
 
-
-bool isValidTableName(const string tableName) // will validate the table name to prevent SQL injections
-{
-    if (tableName.empty())
-    {
-        return false;
-    }
-
-    if (!isalpha(tableName[0])) // checks if first letter is an alphabet
-    {
-        return false;
-    }
-
-    for (char c : tableName) // checks each character of table name
-    {
-        // allows alphanumeric characters and underscores
-        if (!isalnum(c) && c != '_') 
-        {
-            return false;
-        }
-    }
-
-    return true; // if name is valid, then return true
-
-}
-
 bool addRemindersToUserTable(int UID)
 {
     string reminderInput;
@@ -62,35 +36,18 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
-    string tableName = "userReminders_" + to_string(UID);
-    isValidTableName(tableName); // will ensure that the given table is in valid format 
-
-    if (isValidTableName(tableName))
-    {
-        cout << "Valid table name" << endl;
-    }
-    else
-    {
-        cout << "Invalid table name" << endl;
-    }
-
     string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder) VALUES (?)";
     const char* charQuery = addReminder.c_str();
 
-    cout << "TESTING MEASURE FOR SQL STATEMENT " << charQuery << endl;
+    cout << "TESTING MEASURE FOR SQL STATEMENT: " << charQuery << endl;
 
-
-    rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
+    rc = sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);  // ready the SQL statement
 
     if (rc != SQLITE_OK)
     {
-        cerr << "SQL statement initialization has failed!\n";
+        cerr << "SQL statement initialization has failed! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) "\n";
         sqlite3_close(db);
         return false;
-    }
-    else
-    {
-        cout << "SQL statement initialization success!\n";
     }
 
 
@@ -103,9 +60,7 @@ bool addRemindersToUserTable(int UID)
 
         if (rc != SQLITE_OK) 
         {
-            cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(db), "\n" << "Error message" << sqlite3_errmsg(db) << "\n" << endl;
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
+            cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
             return false;
         }
 
@@ -114,9 +69,6 @@ bool addRemindersToUserTable(int UID)
         if (result != SQLITE_DONE) 
         {
             cerr << "Reminder has failed to append to the database: " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
-            // Handle the error and retry, if appropriate
-            sqlite3_reset(stmt);
-            continue;
         } 
         else 
         {
@@ -127,12 +79,13 @@ bool addRemindersToUserTable(int UID)
         rc = sqlite3_reset(stmt);
         if (rc != SQLITE_OK) 
         {
-            cerr << "Error resetting statement" << endl;
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
+            cerr << "Error resetting statement" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
             return false;
         }
     }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return true;
 }
     
 
