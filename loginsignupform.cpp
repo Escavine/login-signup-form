@@ -1,4 +1,4 @@
-// C++ Login + Registration form  
+// C++ Reminders Project
 
 // pre-requisite libraries
 #include <iostream>
@@ -7,6 +7,7 @@
 #include <sqlite3.h> // header library for SQL command utilisation
 #include <stdlib.h> // standard library 
 #include <sstream>
+#include <limits>
 
 
 using namespace std;
@@ -45,7 +46,7 @@ bool addRemindersToUserTable(int UID)
 
     if (rc != SQLITE_OK)
     {
-        cerr << "SQL statement initialization has failed! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) "\n";
+        cerr << "SQL statement initialization has failed! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n";
         sqlite3_close(db);
         return false;
     }
@@ -54,7 +55,7 @@ bool addRemindersToUserTable(int UID)
     for (int i = 0; i < numOfReminders; i++) 
     {
         cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
-        cin >> reminderInput;
+        getline(cin, reminderInput);
 
         rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
 
@@ -77,6 +78,7 @@ bool addRemindersToUserTable(int UID)
 
         // Reset the statement for the next iteration
         rc = sqlite3_reset(stmt);
+        
         if (rc != SQLITE_OK) 
         {
             cerr << "Error resetting statement" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
@@ -493,10 +495,16 @@ bool signUp(int choice, int retryAttempts)
 }
 
 
-void choiceFunction()
+void clearInputBuffer()
+{
+    cin.clear(); // clears error flags
+    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // disards characters until a new line is created
+}
+
+void choiceFunction(int retryAttempts)
 {
     int choice;
-    int retryAttempts = 3; // user can only input details 3 times before termination to prevent infinite recursion
+    bool acceptableInput = false;
     
     cout << "Reminder System Main Menu\n" << endl;
     cout << endl;
@@ -506,22 +514,41 @@ void choiceFunction()
     cout << "1. Sign up\n";
     cout << "2. Login\n";    
     cin >> choice;
-    
+
+    if (cin.fail()) // prevents incorrect data type being input
+    {
+        cerr << "Invalid input, please try again\n" << endl;
+        clearInputBuffer();
+        choiceFunction(retryAttempts);
+        return;
+    }
     
     if (choice == 1)
     {
         cout << "You will be redirected to the sign-up form... " << endl;
+        acceptableInput = true;
         bool signUpProcess = signUp(choice, retryAttempts);
     }
     else if (choice == 2)
     {
         cout << "You will be redirected to the login form... " << endl;
+        acceptableInput = true;
         bool loginResult = isLoggedIn(choice, retryAttempts);
     }
     else
     {
-        cerr << "Input not recognized, please use a sensible input" << endl;
-        choiceFunction(); // keep recusing till right input is made 
+        if (!acceptableInput)
+        {
+            cout << "Input not recognized, please use a sensible input " << endl;
+            clearInputBuffer(); 
+            choiceFunction(retryAttempts - 1); // keep recusing till right input is made 
+            return;
+        }
+        else
+        {
+            cerr << "Too many incorrect attempts, program will now terminate... " << endl;
+            exit(0);
+        }
     }
 }
 
@@ -530,6 +557,7 @@ int main()
 {
     sqlite3* db;
     int rc; // return code
+    int retryAttempts = 3; // prevent input trash
 
     rc = sqlite3_open("userdata.db", &db);
 
@@ -537,12 +565,8 @@ int main()
     {
         cerr << "Users database hasn't been initialized\n";
     }
-    else 
-    {
-        cout << "Users database has been intialized\n"; // test
-    }
 
-    choiceFunction(); // once database connection is established, proceed to go to the sign-in/login page
+    choiceFunction(retryAttempts); // once database connection is established, proceed to go to the sign-in/login page
 
     sqlite3_close(db);
     return 0;
