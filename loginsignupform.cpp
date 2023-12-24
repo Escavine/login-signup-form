@@ -132,41 +132,29 @@ bool addRemindersToUserTable(int UID)
 }
     
 
-void loadingUserReminders(int UID, string tableName) 
+bool loadingUserReminders(int UID) 
 {
     sqlite3* db;
     sqlite3_stmt* stmt;
-    ostringstream queryStream;
 
     int rc = sqlite3_open("userdata.db", &db);
 
     if (rc != SQLITE_OK)
     {
-        cerr << "Error opening database\n";
-        return;
+        cerr << "Error opening database\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << "Error code: " << sqlite3_errcode(db) << endl;
+        return false;
     }
 
-
-    string query = "SELECT individualReminder FROM userReminders_" + to_string(UID) + "WHERE userID = ?";
+    string query = "SELECT individualReminder FROM userReminders_" + to_string(UID);
     const char* charQuery = query.c_str();
 
     rc = sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);
 
     if (rc != SQLITE_OK)
     {
-        cerr << "Error preparing statement\n";
-        sqlite3_close(db);
-        return;
-    }
+        cerr << "Error preparing statement\n" << "Error message; " << sqlite3_errmsg(db) << "\n" << "Error code: " << sqlite3_errcode(db);
+        return false;
 
-    rc = sqlite3_bind_int(stmt, 1, UID);
-
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Error binding parameter\n";
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return;
     }
 
     while (sqlite3_step(stmt) == SQLITE_ROW)
@@ -177,43 +165,11 @@ void loadingUserReminders(int UID, string tableName)
 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
+    return true;
 }
 
 
-string getReminderTableName(int UID)
-{
-    sqlite3* db;
-    sqlite3_stmt* stmt;
-
-
-    sqlite3_open("userdata.db", &db);
-
-    string query = "SELECT * FROM userReminders_" + to_string(UID);
-    const char* charQuery = query.c_str();
-
-    sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);
-
-    int result = sqlite3_step(stmt);
-
-    if (result != SQLITE_OK)
-    {
-        cerr << "Issue loading users table\n";
-        return ""; // or some default value indicating an issue
-    }
-    else
-    {
-        cout << "Successfully loaded users table!\n";
-        // return the table name here if needed
-        string tableName = "userReminders_" + to_string(UID);
-        loadingUserReminders(UID, tableName); // function call to load the given reminders
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return tableName;
-    }
-}
-
-
-bool loginSession(bool loggedInConfo, int UID, string personalName, string personalSurname) 
+bool loginSession(bool loggedInConfo, int UID, string personalName, string personalSurname) // once user is authenticated, this function will run
 { 
     sqlite3* db;
     int rc;
@@ -225,7 +181,7 @@ bool loginSession(bool loggedInConfo, int UID, string personalName, string perso
     cout << "My Reminders App\n";
 
 
-    string result = getReminderTableName(UID);
+    int result = loadingUserReminders(UID);
 
 
     cout << "Options \n";
@@ -393,13 +349,7 @@ void reminderTableGeneration(int UID, string remindersTableName) // table will b
 
     const char* query = createRemindersTable.c_str(); // convert to string
     
-    cout << "Query: " << createRemindersTable.c_str() << endl; // ensuring output is correct
-
-    if (rc != SQLITE_OK)
-    {
-        cerr << "Issue generating table\n" << sqlite3_errmsg(db) << endl;
-    }
-
+    // cout << "Query: " << createRemindersTable.c_str() << endl; 
 
     rc = sqlite3_exec(db, query, nullptr, nullptr, nullptr);
 
@@ -456,7 +406,7 @@ bool signUp(int choice, int retryAttempts)
     
         cout << "Signing up... \n";
 
-        rc = sqlite3_bind_text(stmt, 1, un.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text(stmt, 1, un.c_str(), -1, SQLITE_STATIC); // to ensure unique usernames, make a condition to ensure it isn't present in any of the users rows
 
         if (rc != SQLITE_OK) {
             cerr << "Error binding username\n" << endl;
