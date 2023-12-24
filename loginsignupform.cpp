@@ -74,7 +74,11 @@ bool addRemindersToUserTable(int UID)
         cout << "Invalid table name" << endl;
     }
 
-    const char* addReminder = ("INSERT INTO userReminders_" + to_string(UID) + " (individualReminder) VALUES (?)").c_str();
+    string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder) VALUES (?)";
+    const char* charQuery = addReminder.c_str();
+
+    cout << "TESTING MEASURE FOR SQL STATEMENT " << charQuery << endl;
+
 
     rc = sqlite3_prepare_v2(db, addReminder, -1, &stmt, nullptr);  // ready the SQL statement
 
@@ -99,7 +103,7 @@ bool addRemindersToUserTable(int UID)
 
         if (rc != SQLITE_OK) 
         {
-            cerr << "Input bind fail!" << endl;
+            cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(db), "\n" << "Error message" << sqlite3_errmsg(db) << "\n" << endl;
             sqlite3_finalize(stmt);
             sqlite3_close(db);
             return false;
@@ -109,7 +113,7 @@ bool addRemindersToUserTable(int UID)
 
         if (result != SQLITE_DONE) 
         {
-            cerr << "Reminder has failed to append to the database: " << sqlite3_errcode(db) << endl;
+            cerr << "Reminder has failed to append to the database: " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
             // Handle the error and retry, if appropriate
             sqlite3_reset(stmt);
             continue;
@@ -136,8 +140,9 @@ bool loadingUserReminders(int UID)
 {
     sqlite3* db;
     sqlite3_stmt* stmt;
+    int rc;
 
-    int rc = sqlite3_open("userdata.db", &db);
+    rc = sqlite3_open("userdata.db", &db);
 
     if (rc != SQLITE_OK)
     {
@@ -145,21 +150,24 @@ bool loadingUserReminders(int UID)
         return false;
     }
 
-    string query = "SELECT individualReminder FROM userReminders_" + to_string(UID);
+    string query = "SELECT individualReminder, uniqueReminderID FROM userReminders_" + to_string(UID);
     const char* charQuery = query.c_str();
+
+    // cout << charQuery << endl; 
+    // cout << "TESTING MEASURE TO CONFIRM USER ID: " << UID << endl; 
 
     rc = sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);
 
     if (rc != SQLITE_OK)
     {
-        cerr << "Error preparing statement\n" << "Error message; " << sqlite3_errmsg(db) << "\n" << "Error code: " << sqlite3_errcode(db);
+        cerr << "Error preparing statement\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << "Error code: " << sqlite3_errcode(db) << endl;
         return false;
 
     }
-
+    
     while (sqlite3_step(stmt) == SQLITE_ROW)
     {
-        const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        const char* reminder = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         cout << "Current reminder: " << reminder << endl;
     }
 
