@@ -17,6 +17,46 @@ using namespace std;
 
 // void hashingAlgorithm() {} // for further encrypting the password
 
+
+string bindText(sqlite3_stmt* stmt, const string& reminderInput)
+{
+    int rc;
+
+    do 
+    {
+        rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
+
+        if (rc != SQLITE_OK) 
+        {
+            cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(sqlite3_db_handle(stmt)) << "\n" 
+                 << "Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << "\n" << endl;
+        }
+
+    } while (rc == SQLITE_BUSY);
+
+    return "Text has been binded successfully!";
+}
+
+int bindInt(sqlite3_stmt* stmt, int UID)
+{
+    int rc;
+
+    do
+    {
+        rc = sqlite3_bind_int(stmt, 2, UID);
+
+        if (rc != SQLITE_OK)
+        {
+            cerr << "userID has failed to bind to the reminders table! " << "Error code: " << sqlite3_errcode(sqlite3_db_handle(stmt)) << "\n" 
+                 << "Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << "\n" << endl;
+        }
+
+    } while (rc == SQLITE_BUSY);
+
+    return rc;
+}
+
+
 bool addRemindersToUserTable(int UID)
 {
     string reminderInput;
@@ -61,26 +101,19 @@ bool addRemindersToUserTable(int UID)
         cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
         cin >> reminderInput;
 
-        rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
+        string resultText = bindText(stmt, reminderInput); // function call to bind the reminder text to the database
 
-        if (rc != SQLITE_OK) 
+        int resultInt = bindInt(stmt, UID); // function call to bind the userID to the database
+
+        if (resultInt != SQLITE_OK)
         {
-            cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
-            return false;
+            cerr << "Error binding UID to the reminders table!" << endl;
+            sqlite3_reset(stmt);
+            continue; // Continue to the next iteration without finalizing the statement
         }
 
-        rc = sqlite3_bind_int(stmt, 2, UID);
 
-        if (rc != SQLITE_OK)
-        {
-            cerr << "userID has failed to bind to the reminders table! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message " << sqlite3_errmsg(db) << "\n" << endl;
-            sqlite3_close(db);
-            return false;
-        }
-
-        int result = sqlite3_step(stmt);
+        int result = sqlite3_step(stmt); 
 
         if (result != SQLITE_DONE) 
         {
