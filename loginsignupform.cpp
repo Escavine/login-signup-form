@@ -8,6 +8,8 @@
 #include <stdlib.h> // standard library 
 #include <sstream>
 #include <limits>
+#include <chrono>
+#include <thread>
 
 
 using namespace std;
@@ -74,7 +76,7 @@ bool addRemindersToUserTable(int UID)
             cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
             sqlite3_finalize(stmt);
             sqlite3_close(db);
-            break;
+            return false;
         }
 
         int result = sqlite3_step(stmt);
@@ -82,27 +84,26 @@ bool addRemindersToUserTable(int UID)
         if (result != SQLITE_DONE) 
         {
             cerr << "Reminder has failed to append to the database: " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
-            sqlite3_reset(stmt); // Reset the statement for the next iteration
+
+            // Introduce a delay to simulate a longer transaction time
+            this_thread::sleep_for(chrono::seconds(1));
+
+            // Reset the statement for the next iteration
+            rc = sqlite3_reset(stmt);
             continue; // Continue to the next iteration without finalizing the statement
         } 
         else 
         {
             cout << "Reminder has successfully appended to the database!" << endl;
         }
-    }
 
-    rc = sqlite3_finalize(stmt); // ensuring statement properly finalizes
-
-    if (rc != SQLITE_OK) 
-    {
-        cerr << "Error finalizing statement" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
+        rc = sqlite3_finalize(stmt); // ensuring statement properly finalizes
         sqlite3_close(db);
-        return false;
+        return true;
     }
 
-    sqlite3_close(db);
-    return true;
 }
+
 
     
 
