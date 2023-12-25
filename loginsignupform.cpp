@@ -23,9 +23,11 @@ bool addRemindersToUserTable(int UID)
     sqlite3* db;
     sqlite3_stmt* stmt;
 
-
-    cout << "How many reminders do you wish to add? \n"; 
+    cout << "How many reminders do you wish to add? \n";
     cin >> numOfReminders;
+
+    // Add this line to consume the newline character left by cin >>
+    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     cout << "Affirming userID before adding reminder: " << "(ID is " << UID << " )" << endl; // testing measures (IDS ARE ZERO BASED)
 
@@ -37,20 +39,28 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
-    string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder) VALUES (?)";
+    string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder, userID) VALUES (?, ?)";
     const char* charQuery = addReminder.c_str();
 
-    cout << "TESTING MEASURE FOR SQL STATEMENT: " << charQuery << endl;
+    // cout << "TESTING MEASURE FOR SQL STATEMENT: " << charQuery << endl;
 
     rc = sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);  // ready the SQL statement
-
+    
     if (rc != SQLITE_OK)
     {
-        cerr << "SQL statement initialization has failed! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n";
+        cerr << "SQL statement initialization has failed! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
         sqlite3_close(db);
         return false;
     }
 
+    rc = sqlite3_bind_int(stmt, 2, UID);
+
+    if (rc != SQLITE_OK)
+    {
+        cerr << "userID has failed to bind to the reminders table! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message " << sqlite3_errmsg(db) << "\n" << endl;
+        sqlite3_close(db);
+        return false;
+    }
 
     for (int i = 0; i < numOfReminders; i++) 
     {
@@ -62,7 +72,9 @@ bool addRemindersToUserTable(int UID)
         if (rc != SQLITE_OK) 
         {
             cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
-            return false;
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            break;
         }
 
         int result = sqlite3_step(stmt);
@@ -70,25 +82,28 @@ bool addRemindersToUserTable(int UID)
         if (result != SQLITE_DONE) 
         {
             cerr << "Reminder has failed to append to the database: " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
+            sqlite3_reset(stmt); // Reset the statement for the next iteration
+            continue; // Continue to the next iteration without finalizing the statement
         } 
         else 
         {
             cout << "Reminder has successfully appended to the database!" << endl;
         }
-
-        // Reset the statement for the next iteration
-        rc = sqlite3_reset(stmt);
-        
-        if (rc != SQLITE_OK) 
-        {
-            cerr << "Error resetting statement" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
-            return false;
-        }
     }
-    sqlite3_finalize(stmt);
+
+    rc = sqlite3_finalize(stmt); // ensuring statement properly finalizes
+
+    if (rc != SQLITE_OK) 
+    {
+        cerr << "Error finalizing statement" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
+        sqlite3_close(db);
+        return false;
+    }
+
     sqlite3_close(db);
     return true;
 }
+
     
 
 bool loadingUserReminders(int UID) 
@@ -227,11 +242,6 @@ bool isLoggedIn(int choice, int retryAttempts) {
             sqlite3_close(db);
             break;
         }
-        else
-        {
-            cout << "Username has been initialized\n";
-        }
-
 
         rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC);
 
@@ -241,11 +251,6 @@ bool isLoggedIn(int choice, int retryAttempts) {
             sqlite3_finalize(stmt);
             sqlite3_close(db);
             break;
-        }
-        else
-        {
-            cout << "Password has been intialized\n";
-
         }
 
 
