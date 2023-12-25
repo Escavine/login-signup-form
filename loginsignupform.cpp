@@ -44,7 +44,7 @@ bool addRemindersToUserTable(int UID)
     string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder, userID) VALUES (?, ?)";
     const char* charQuery = addReminder.c_str();
 
-    // cout << "TESTING MEASURE FOR SQL STATEMENT: " << charQuery << endl;
+    cout << "TESTING MEASURE FOR SQL STATEMENT: " << charQuery << endl; // testing measure
 
     rc = sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);  // ready the SQL statement
     
@@ -55,19 +55,11 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
-    rc = sqlite3_bind_int(stmt, 2, UID);
-
-    if (rc != SQLITE_OK)
-    {
-        cerr << "userID has failed to bind to the reminders table! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message " << sqlite3_errmsg(db) << "\n" << endl;
-        sqlite3_close(db);
-        return false;
-    }
 
     for (int i = 0; i < numOfReminders; i++) 
     {
         cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
-        getline(cin, reminderInput);
+        cin >> reminderInput;
 
         rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
 
@@ -75,6 +67,15 @@ bool addRemindersToUserTable(int UID)
         {
             cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
             sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return false;
+        }
+
+        rc = sqlite3_bind_int(stmt, 2, UID);
+
+        if (rc != SQLITE_OK)
+        {
+            cerr << "userID has failed to bind to the reminders table! " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message " << sqlite3_errmsg(db) << "\n" << endl;
             sqlite3_close(db);
             return false;
         }
@@ -97,15 +98,14 @@ bool addRemindersToUserTable(int UID)
             cout << "Reminder has successfully appended to the database!" << endl;
         }
 
-        rc = sqlite3_finalize(stmt); // ensuring statement properly finalizes
-        sqlite3_close(db);
-        return true;
     }
+
+    rc = sqlite3_finalize(stmt); // ensuring statement properly finalizes
+    sqlite3_close(db);
+    return true;
 
 }
 
-
-    
 
 bool loadingUserReminders(int UID) 
 {
@@ -354,10 +354,6 @@ bool signUp(int choice, int retryAttempts)
         cerr << "Error preparing statement\n" << endl;
         return false;
     }
-    else 
-    {
-        cout << "Sucessfully prepared statement\n" << endl;
-    }
 
     while (!signUpSuccess) 
     {
@@ -383,10 +379,6 @@ bool signUp(int choice, int retryAttempts)
             sqlite3_close(db);
             break;
         }
-        else 
-        {
-            cout << "Sucessfully binded username\n" << endl;
-        }
 
 
         rc = sqlite3_bind_text(stmt, 2, pw.c_str(), -1, SQLITE_STATIC); 
@@ -399,10 +391,7 @@ bool signUp(int choice, int retryAttempts)
             sqlite3_close(db);
             break;
         }
-        else 
-        {
-            cout << "Sucessfully binded password\n" << endl;
-        }
+
 
         rc = sqlite3_bind_text(stmt, 3, personalName.c_str(), -1, SQLITE_STATIC);
 
@@ -413,10 +402,7 @@ bool signUp(int choice, int retryAttempts)
             sqlite3_close(db);
             break;
         }
-        else 
-        {
-            cout << "Sucessfully binded name\n" << endl;
-        }
+
 
         rc = sqlite3_bind_text(stmt, 4, personalSurname.c_str(), -1, SQLITE_STATIC);
 
@@ -426,10 +412,6 @@ bool signUp(int choice, int retryAttempts)
             sqlite3_finalize(stmt);
             sqlite3_close(db);
             break;
-        }
-        else 
-        {
-            cout << "Sucessfully binded surname\n" << endl;
         }
 
 
