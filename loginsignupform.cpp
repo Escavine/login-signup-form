@@ -29,7 +29,7 @@ string bindText(sqlite3_stmt* stmt, const string& reminderInput)
         if (rc != SQLITE_OK) 
         {
             cerr << "Input bind fail!" << "Error code: " << sqlite3_errcode(sqlite3_db_handle(stmt)) << "\n" 
-                 << "Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << "\n" << endl;
+                 << "Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << "\n" << endl; // ChatGPT changes
         }
 
     } while (rc == SQLITE_BUSY);
@@ -48,7 +48,7 @@ int bindInt(sqlite3_stmt* stmt, int UID)
         if (rc != SQLITE_OK)
         {
             cerr << "userID has failed to bind to the reminders table! " << "Error code: " << sqlite3_errcode(sqlite3_db_handle(stmt)) << "\n" 
-                 << "Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << "\n" << endl;
+                 << "Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << "\n" << endl; // ChatGPT changes
         }
 
     } while (rc == SQLITE_BUSY);
@@ -81,10 +81,19 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
+    // Begin a transaction (ChatGPT prompt)
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", 0, 0, 0);
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Failed to begin transaction\n";
+        sqlite3_close(db);
+        return false;
+    }
+
     string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder, userID) VALUES (?, ?)";
     const char* charQuery = addReminder.c_str();
 
-    cout << "TESTING MEASURE FOR SQL STATEMENT: " << charQuery << endl; // testing measure
+    // cout << "TESTING MEASURE FOR SQL STATEMENT: " << charQuery << endl; 
 
     rc = sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);  // ready the SQL statement
     
@@ -95,15 +104,17 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
-
     for (int i = 0; i < numOfReminders; i++) 
     {
         cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
         cin >> reminderInput;
 
-        string resultText = bindText(stmt, reminderInput); // function call to bind the reminder text to the database
+        string resultText = bindText(stmt, reminderInput);
+        cout << resultText << endl;
 
-        int resultInt = bindInt(stmt, UID); // function call to bind the userID to the database
+        int resultInt = bindInt(stmt, UID);
+
+        int result = sqlite3_step(stmt);
 
         if (resultInt != SQLITE_OK)
         {
@@ -112,12 +123,10 @@ bool addRemindersToUserTable(int UID)
             continue; // Continue to the next iteration without finalizing the statement
         }
 
-
-        int result = sqlite3_step(stmt); 
-
         if (result != SQLITE_DONE) 
         {
-            cerr << "Reminder has failed to append to the database: " << "Error code: " << sqlite3_errcode(db) << "\n" << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
+            cerr << "Reminder has failed to append to the database: " << "Error code: " << sqlite3_errcode(db) << "\n" 
+                 << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
 
             // Introduce a delay to simulate a longer transaction time
             this_thread::sleep_for(chrono::seconds(1));
@@ -130,13 +139,18 @@ bool addRemindersToUserTable(int UID)
         {
             cout << "Reminder has successfully appended to the database!" << endl;
         }
+    }
 
+    // Commit the transaction (ChatGPT prompt)
+    rc = sqlite3_exec(db, "COMMIT", 0, 0, 0);
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Failed to commit transaction\n";
     }
 
     rc = sqlite3_finalize(stmt); // ensuring statement properly finalizes
     sqlite3_close(db);
     return true;
-
 }
 
 
