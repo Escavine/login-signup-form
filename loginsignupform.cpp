@@ -41,28 +41,6 @@ int bindText(sqlite3_stmt* stmt, const string& reminderInput)
     return rc;
 }
 
-int bindInt(sqlite3_stmt* stmt, int UID)
-{
-    int rc;
-    do
-    {
-        rc = sqlite3_bind_int(stmt, 2, UID);
-        if (rc != SQLITE_OK && rc != SQLITE_BUSY)
-        {
-            cerr << "Int binding failed! Error code: " << rc << " Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << endl;
-            return rc;
-        }
-
-        if (rc == SQLITE_BUSY)
-        {
-            cerr << "Database is busy, retrying..." << endl;
-            this_thread::sleep_for(chrono::milliseconds(100)); // Introduce a delay before retrying
-        }
-
-    } while (rc == SQLITE_BUSY);
-
-    return rc;
-}
 
 bool addRemindersToUserTable(int UID)
 {
@@ -97,10 +75,10 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
-    string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder, userID) VALUES (?, ?)";
+    string addReminder = "INSERT INTO userReminders_" + to_string(UID) + " (individualReminder, userID) VALUES (?" + ", " + to_string(UID) + ")";
     const char* charQuery = addReminder.c_str();
 
-    cout << "SQL QUERY:" << addReminder << endl; // checking SQL query to ensure it is correct.
+    cout << "SQL QUERY: " << addReminder << endl; // checking SQL query to ensure it is correct.
 
     rc = sqlite3_prepare_v2(db, charQuery, -1, &stmt, nullptr);  // ready the SQL statement
 
@@ -119,9 +97,6 @@ bool addRemindersToUserTable(int UID)
 
         int resultText = bindText(stmt, reminderInput);
         cout << "Text binding result: " << resultText << endl;
-
-        int resultInt = bindInt(stmt, UID);
-        cout << "Int binding result: " << resultInt << endl;
 
         int result = sqlite3_step(stmt);
 
