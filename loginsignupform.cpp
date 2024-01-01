@@ -21,9 +21,9 @@ using namespace std;
 int bindText(sqlite3_stmt* stmt, const string& reminderInput)
 {
     int rc;
-    do 
+    do
     {
-        rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text(stmt, 1, reminderInput.c_str(), static_cast<int>(reminderInput.size()), SQLITE_STATIC);
         if (rc != SQLITE_OK && rc != SQLITE_BUSY)
         {
             cerr << "Text binding failed! Error code: " << rc << " Error message: " << sqlite3_errmsg(sqlite3_db_handle(stmt)) << endl;
@@ -40,7 +40,6 @@ int bindText(sqlite3_stmt* stmt, const string& reminderInput)
 
     return rc;
 }
-
 
 bool addRemindersToUserTable(int UID)
 {
@@ -90,32 +89,37 @@ bool addRemindersToUserTable(int UID)
         return false;
     }
 
-    for (int i = 0; i < numOfReminders; i++) 
+    cout << "Write the details of the given reminder: " << endl;
+    getline(cin, reminderInput);
+
+    int resultText = bindText(stmt, reminderInput);
+    cout << "Text binding result: " << resultText << endl;
+
+    int result = sqlite3_step(stmt);
+
+    if (result != SQLITE_DONE)
     {
-        cout << "Write the details of the given reminder (No. " << i + 1 << "): ";
-        getline(cin, reminderInput);
+        cerr << "Reminder has failed to append to the database: " << "Error code: " << result << "\n"
+                << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
 
-        int resultText = bindText(stmt, reminderInput);
-        cout << "Text binding result: " << resultText << endl;
+        // Introduce a delay to simulate a longer transaction time
+        this_thread::sleep_for(chrono::seconds(1));
 
-        int result = sqlite3_step(stmt);
+        // Reset the statement for the next iteration
+        rc = sqlite3_reset(stmt);
+        continue; // Continue to the next iteration without finalizing the statement
+    }
+    else
+    {
+        cout << "Reminder has successfully appended to the database!" << endl;
+        loginSession(loggedInConfo, UID, personalName, personalSurname);
+    }
 
-        if (result != SQLITE_DONE) 
-        {
-            cerr << "Reminder has failed to append to the database: " << "Error code: " << result << "\n"
-                 << "Error message: " << sqlite3_errmsg(db) << "\n" << endl;
-
-            // Introduce a delay to simulate a longer transaction time
-            this_thread::sleep_for(chrono::seconds(1));
-
-            // Reset the statement for the next iteration
-            rc = sqlite3_reset(stmt);
-            continue; // Continue to the next iteration without finalizing the statement
-        } 
-        else 
-        {
-            cout << "Reminder has successfully appended to the database!" << endl;
-        }
+    // Finalize the statement
+    rc = sqlite3_finalize(stmt);
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Failed to finalize statement\n";
     }
 
     // Commit the transaction
@@ -125,7 +129,6 @@ bool addRemindersToUserTable(int UID)
         cerr << "Failed to commit transaction\n";
     }
 
-    rc = sqlite3_finalize(stmt); // ensuring the statement properly finalizes
     sqlite3_close(db);
     return true;
 }
@@ -190,8 +193,8 @@ bool loginSession(bool loggedInConfo, int UID, string personalName, string perso
 
     cout << "Options \n";
     cout << endl;
-    cout << "1. Add reminders\n";
-    cout << "2. Log out \n";
+    cout << "1. Add reminders (NOT WORKING YET)\n";
+    cout << "2. Log out\n";
     cout << "3. Remove reminders (NOT WORKING YET)\n";
     cin >> choice;
 
